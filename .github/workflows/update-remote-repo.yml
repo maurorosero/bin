@@ -1,22 +1,25 @@
 name: Update Remote Repository on Panamatech Gitdevs
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
 
 jobs:
   update-remote-repo:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+        env:
+          token: ${{ secrets.GITLAB_TOKEN }}
 
-      - name: Update Remote Panamatech Gitdevs Repository
+      - name: Push to Panamatech Gitdevs Repository
         run: |
-          git remote add remote-repo git@gitdevs.panamatech.net:mrosero/bin.git
           git config --global user.email "mauro.rosero@gmail.com"
           git config --global user.name "Mauro Rosero P."
-          git push remote-repo HEAD:master
-	  git push https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitdevs.panamatech.net/mrosero/bin.git HEAD:master
+          git remote set-url origin "https://oauth2:${token}@gitdevs.panamatech.net/mrosero/bin.git"
+          git push origin HEAD:master
 
 
