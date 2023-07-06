@@ -13,10 +13,10 @@ jobs:
 
       - name: Update Remote Panamatech Gitdevs Repository
         run: |
-          git remote add remote-repo https://gitdevs.panamatech.net/mrosero/bin.git
+          git remote add remote-repo git@gitdevs.panamatech.net:mrosero/bin.git
           git config --global user.email "mauro.rosero@gmail.com"
           git config --global user.name "Mauro Rosero P."
           git push remote-repo HEAD:master
-	  git push https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitdevs.panamatech.net/bin.git HEAD:master
+	  git push https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitdevs.panamatech.net/mrosero/bin.git HEAD:master
 
 
