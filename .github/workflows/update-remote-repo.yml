@@ -1,0 +1,19 @@
+name: Update Remote Repository on Panamatech Gitdevs
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  update-remote-repo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Update Remote Panamatech Gitdevs Repository
+        run: |
+          git remote add remote-repo git@gitdevs.panamatech.net:mrosero/bin.git
+          git config --global user.email "mauro.rosero@gmail.com"
+          git config --global user.name "Mauro Rosero P."
+          git push remote-repo HEAD:master
