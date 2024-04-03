@@ -13,7 +13,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push to Panamatech Gitdevs Repository
+      - name: Push to Panamatech Gitlab Repository
         env:
           token: ${{ secrets.GITLAB_TOKEN }}
         run: |
