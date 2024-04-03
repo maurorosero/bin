@@ -1,4 +1,4 @@
-name: Update Remote Repository on Panamatech Gitdevs
+name: Update Remote Repository on Panamatech Gitlab
 on:
   push:
     branches: [ master ]
@@ -19,7 +19,7 @@ jobs:
         run: |
           git config --global user.email "mauro.rosero@gmail.com"
           git config --global user.name "Mauro Rosero P."
-          git remote set-url origin "https://oauth2:${token}@gitdevs.panamatech.net/mrosero/bin.git"
+          git remote set-url origin "https://oauth2:${token}@git.panamatech.net/mrosero/bin.git"
           git push origin HEAD:master
 
 
