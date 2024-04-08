@@ -42,7 +42,7 @@ install_or_update_python() {
 install_ansible_debian() {
     echo "${pymsg_004}"
     apt update
-    apt install -y python3-pip
+    apt install -y python3-pip dialog gettext
     pip3 install ansible
     echo "${pymsg_005}"
 }
@@ -50,7 +50,7 @@ install_ansible_debian() {
 # Función para instalar Ansible utilizando pip en sistemas Red Hat
 install_ansible_redhat() {
     echo "${pymsg_006}"
-    yum install -y python3-pip
+    yum install -y python3-pip dialog gettext
     pip3 install ansible
     echo "${pymsg_007}"
 }
@@ -58,6 +58,7 @@ install_ansible_redhat() {
 # Función para instalar Ansible utilizando pip en macOS
 install_ansible_macos() {
     echo "${pymsg_008}"
+    brew install dialog gettext
     pip3 install ansible
     echo "${pymsg_009}"
 }
@@ -65,7 +66,7 @@ install_ansible_macos() {
 # Función para instalar Ansible utilizando pip en Arch Linux
 install_ansible_arch() {
     echo "${pymsg_010}"
-    pacman -Sy --noconfirm python-pip
+    pacman -Sy --noconfirm python-pip dialog gettext
     pip install ansible
     echo "${pymsg_011}"
 }
@@ -73,7 +74,7 @@ install_ansible_arch() {
 # Función para instalar Ansible utilizando pip en BSD
 install_ansible_bsd() {
     echo "${pymsg_012}"
-    pkg install -y py38-pip
+    pkg install -y py38-pip dialog gettext
     pip3 install ansible
     echo "${pymsg_013}"
 }

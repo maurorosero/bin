@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #bash script     : bootstrap.es 
-#apps            : Bootstrap Spanish
+#apps            : Personal Developer Utilities
 #description     : Bootstrap Translate Messages (es)
 #author		     : MRP/mrp - Mauro Rosero P.
 #company email   : mauro@rosero.one

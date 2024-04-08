@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #bash script     : bootstrap.sh
-#apps            : Boostrap Developer Station
-#description     : Install base python & ansible
+#apps            : Personal Developer Utilities
+#description     : Bootstrap Packages Install
 #author		     : MRP/mrp - Mauro Rosero P.
 #company email   : mauro@rosero.one
 #personal email  : mauro.rosero@gmail.com
@@ -13,7 +13,6 @@
 
 install() {
 	local install_home=$1
-	clear
 		
 	# Load bootstrap messages
 	if [ -f "${install_home}/bin/msg/bootstrap.$LANG" ]
@@ -24,7 +23,7 @@ install() {
 	fi	
 	
 	# Load Python & Ansible Installer Functions
-	source "${install_home}/bin/lib/python.lib"	
+	source "${install_home}/bin/lib/bootstrap.lib"	
 
 	# Instalar o actualizar Python a la última versión
 	install_or_update_python
@@ -46,5 +45,17 @@ install() {
 	fi
 }
 
-# Llamar a la función con sudo
+# Main.- Llamar a la función con sudo
+clear
+
+# Load head messages
+if [ -f "${HOME}/bin/msg/bootstrap.$LANG" ]
+then
+	source "${HOME}/bin/msg/head.$LANG"
+else
+	source "${HOME}/bin/msg/head.es"
+fi	
+
+echo "${head_000}"
+echo "------------------------------------------------------------------------------"
 sudo bash -c "$(declare -f install); install ${HOME}"
