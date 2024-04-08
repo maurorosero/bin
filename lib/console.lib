@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+#bash script     : console.lib 
+#apps            : Dialog Function Bash Lib
+#description     : Console Input Dialog Library
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+### Yes/No Input
+mz_yesno() {
+  dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${app_header1}" --yesno "\n$1" 6 80
+  result=$?
+}
+
+### Text Box Input
+mz_inputbox() {
+  local label="$1"
+  local helper="$2"
+  exec 3>&1;
+  value=$(dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${app_header1}" --inputbox "\n${label}\n${helper}" 10 80 "$3" 2>&1 1>&3);
+  codex=$?;
+  exec 3>&-;
+}
+
+### Password Box Input
+mz_inputpass(){
+  local label="$1"
+  local helper="$2"
+  exec 3>&1;
+  value=$(dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${app_header1}" --passwordbox "\n${label}\n${helper}" 10 80 "$3" 2>&1 1>&3);
+  codex=$?;
+  exec 3>&-;
+}
+
+### Select File Box Input
+set_filepath(){
+  local valid_file="0"
+  local file_path=$1
+
+  while [ "$valid_file" == "0" ]
+  do
+    exec 3>&1;
+    result=$(dialog --begin 2 2 --title "${app_header1} - $2" --backtitle "${title}" --fselect ${file_path} 7 0 2>&1 1>&3);
+    exitcode=$?;
+    exec 3>&-;
+    if [ "$exitcode" == "0" ]
+    then
+      if [ -f "$result" ]
+      then
+        file_path=${result}
+        valid_file="1"
+      fi
+    else
+      valid_file="2"
+    fi
+  done
+}
+
+### Error Dialog
+
+show_error_dialog() {
+    local msgtype="$1"
+    local message="$2"
+
+    # Redirigir la salida de error al descriptor de archivo 3
+    exec 3>&1;
+
+    # Mostrar el cuadro de diálogo
+    dialog --backtitle "${title}" --title "${msgtype} - ${apps_name}" --msgbox "\n${message}" 8 60
+    dialog --and-widget --msgbox "\n${message}"
+
+    exec 3>&-;
+}
