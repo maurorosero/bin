@@ -49,7 +49,7 @@ install() {
 clear
 
 # Load head messages
-if [ -f "${HOME}/bin/msg/bootstrap.$LANG" ]
+if [ -f "${HOME}/bin/msg/head.$LANG" ]
 then
 	source "${HOME}/bin/msg/head.$LANG"
 else

@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+#bash script     : packages.lib 
+#apps            : MRosero Personal Developer Utilities
+#description     : Package Installer Library
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+# Función para mostrar la barra de progreso utilizando dialog gauge
+show_progress() {
+  local message=$1
+  local percent=$2
+
+  echo "$percent" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${message}" 18 80 0
+}
+
+get_osname() {
+    if [ "$(uname)" == "Darwin" ]; then
+        # En macOS, instalamos o actualizamos a través de Homebrew
+        os_name=$(sw_vers -productVersion | awk -F '.' '{print "macOS " $1 "." $2}')
+    elif [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
+        # En sistemas Debian y derivados, instalamos o actualizamos a través de apt
+        os_name=$(lsb_release -i -s)
+    elif [ -f /etc/redhat-release ]; then
+        # En sistemas Red Hat, instalamos o actualizamos a través de dnf
+        os_name=$(awk '{print $1}' /etc/redhat-release)
+    elif [ -f /etc/arch-release ]; then
+        # En Arch Linux, instalamos o actualizamos a través de pacman
+        os_name=$(grep '^NAME=' /etc/os-release | awk -F '"' '{print $2}')
+    elif [ -f /etc/rc.conf ]; then
+        # En BSD, instalamos o actualizamos a través de pkg
+        os_name=$(awk '{print $2}' /etc/version | awk -F '-' '{print $1}')
+    else
+        os_name="${head_unknow}"
+    fi
+}
+
+
+# Función para instalar o actualizar Python a la última versión
+install_os_packages() {
+    local pkg_name=$1
+
+    if [ "$(uname)" == "Darwin" ]; then
+        # En macOS, instalamos o actualizamos a través de Homebrew
+        log=$(brew install ${pkg_name} 2>&1)
+    elif [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
+        # En sistemas Debian y derivados, instalamos o actualizamos a través de apt
+        log=$(apt install ${pkg_name} 2>&1)
+    elif [ -f /etc/redhat-release ]; then
+        # En sistemas Red Hat, instalamos o actualizamos a través de dnf
+        log=$(dnf install ${pkg_name} 2>&1)
+    elif [ -f /etc/arch-release ]; then
+        # En Arch Linux, instalamos o actualizamos a través de pacman
+        log=$(pacman -Sy --noconfirm ${pkg_name} 2>&1)
+    elif [ -f /etc/rc.conf ]; then
+        # En BSD, instalamos o actualizamos a través de pkg
+        log=$(pkg install -y ${pkg_name} 2>&1)
+    fi
+}
+
+# Instalar paquetes de sistema operativo
+install_packages() {
+  local packages_file="$1"
+  local total_lines=$(wc -l <"${packages_file}")
+  local current_line=0
+
+  while IFS= read -r line; do
+    current_line=$((current_line + 1))
+    local progress=$((current_line * 100 / total_lines))
+
+    # Instalar la colección utilizando ansible-galaxy
+    install_os_packages ${line}
+
+    # Mostrar la barra de progreso
+    show_progress "${head_installing}: $line\n\n$log" "$progress"
+  done <"${packages_file}"
+
+  # Finalizar la barra de progreso
+  echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
+}
+
+

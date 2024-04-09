@@ -1,0 +1,10 @@
+git
+curl
+lsof
+wget
+unzip
+gpg
+mutt
+jq
+sudo
+unzip

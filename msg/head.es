@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #bash script     : head.es 
-#apps            : Personal Developer Utilities
+#apps            : MRosero Personal Developer Utilities
 #description     : Head Translate Messages (es)
 #author		     : MRP/mrp - Mauro Rosero P.
 #company email   : mauro@rosero.one
@@ -11,5 +11,10 @@
 #==============================================================================
 #==============================================================================
 
-head_000="Personal Developer Utilities"
-
+head_000="MRosero Personal Developer Utilities"
+head_001="El comando 'dialog' no está instalado. Por favor, ejecute bootstrap.sh."
+head_installing="Instalando"
+head_info="INFO"
+head_warning="ADVERTENCIA"
+head_error="ERROR"
+head_unknow="UNKNOW"
