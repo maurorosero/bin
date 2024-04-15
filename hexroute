@@ -1,0 +1,95 @@
+#!/bin/bash
+######################################################################
+#
+#  hexroute - convert human readable routes to dhcpd static route info
+#             for Windows(r) clients
+#
+#  Copyright (c) 2005-2015 Karl McMurdo
+#
+#  Freely distributable, but please keep header intact
+#
+#  Update: May 10, 2007 Change Max Quad to 255
+#
+######################################################################
+split_ipaddr() {
+[ ${1:-X} = X -o "${1}" != ${1//[^.0-9]/} -o ${1:-X} = X \
+    -o "${1//[0-9]/}" != "..." ] && return 1
+	local rval=0
+	local t
+	local T[1]
+	local T[2]
+	local T[3]
+	local T[4]
+	T[1]=${1%%.*}
+	T[2]=${1#*.}
+	T[2]=${T[2]%%.*}
+	T[3]=${1#*.*.}
+	T[3]=${T[3]%%.*}
+	T[4]=${1#*.*.*.}
+	[ ${T[1]} = 0 ] && rval=1
+	for t in 1 2 3 4
+	do
+		[ ${T[${t}]:-999} -gt 255 ] && rval=1
+		eval "${2}[${t}]=${T[${t}]}"
+	done
+	return ${rval}
+}
+USAGE='echo -e "Usage: ${0//*\/} [-v|-h] target/bits [gw] gateway [target/bits [gw] gateway ...]\n\n\tie: ${0} 172.16.0.0/16 gw 192.168.1.1\n" && exit 1'
+INFO="HexRoute 1.0    Copyright (c) 2015 Karl McMurdo
+
+Converts human readable route information to a dhcpd hex string
+
+	-v	Once prints full dhcpd.conf line for route(s)
+		Twice also prints option definiton lines for dhcpd.conf
+	-h	Prints this message
+"
+DHCPHDR="# New Option Type for Windows Client Static Routes
+option new-static-routes code 249 = string;"
+DHCPS="option new-static-routes "
+DHCPE=";"
+BADTARG='echo -e "Invalid target network: ${1}" && exit 2'
+BADBITS='echo -e "Invalid Network bit value: ${1}" && exit 3'
+BADGW='echo -e "Invalid Gateway: ${2}" && exit 4'
+VERBOSE=false
+EXTRAVERBOSE=false
+while [ "${1:0:1}" = "-" ]
+do
+	if [ "${1}" = "-v" ]
+	then
+		$VERBOSE && EXTRAVERBOSE=true
+		VERBOSE=true
+	elif [ "${1}" = "-h" ]
+	then
+		echo "${INFO}"
+		eval "${USAGE}"
+	else
+		eval "${USAGE}"
+	fi
+	shift
+done
+[ ${#} -lt 2 ] && eval "${USAGE}"
+OUT=""
+while [ ${#} -ge 2 ]
+do
+	split_ipaddr ${1/\/*/} TARG || eval "${BADTARG}"
+	BITS=${1/*\//}
+	shift
+	[ ${BITS:-X} = X -o "${BITS}" != ${BITS//[^0-9]/} ] && eval "${BADBITS}"
+	[ ${BITS} -gt 32 -o ${BITS} -lt 1 ] && eval "${BADBITS}"
+	[ ${1:-X} = gw ] && shift
+	split_ipaddr ${1:-X} GW || eval "${BADGW}"
+	shift
+	OUT=${OUT}$( printf ":%02x:%02x" ${BITS} ${TARG[1]} )
+	[ ${BITS} -gt 8 ]  && OUT=${OUT}$( printf ":%02x" ${TARG[2]} )
+	[ ${BITS} -gt 16 ] && OUT=${OUT}$( printf ":%02x" ${TARG[3]} )
+	[ ${BITS} -gt 24 ] && OUT=${OUT}$( printf ":%02x" ${TARG[4]} )
+	OUT=${OUT}$( printf ":%02x:%02x:%02x:%02x" ${GW[@]} )
+done
+$EXTRAVERBOSE && echo "${DHCPHDR}"
+if $VERBOSE
+then
+	echo ${DHCPS}${OUT/:/}${DHCPE}
+else
+	echo ${OUT/:/}
+fi
+
