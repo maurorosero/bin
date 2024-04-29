@@ -59,7 +59,7 @@ jobs:
         id: read_release_suffix
         run: |
           RELEASE_SUFFIX=$(cat .release_suffix)
-          echo "::set-output name=prefix::$RELEASE_SUFFIX"
+          echo "::set-output name=suffix::$RELEASE_SUFFIX"
 
       - name: Create new project version/release
         id: create_release
