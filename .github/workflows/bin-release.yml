@@ -39,7 +39,13 @@ jobs:
           else
              echo "::set-output name=changed::false"
           fi
-
+          
+      - name: Compress repository contents with gzip
+        id: create_archive
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git ls-files | xargs gzip -r -k
+          
       - name: Read Bin Release Prefix (${{ steps.check_changes.outputs.changed }})
         id: read_release_prefix
         if: steps.check_changes.outputs.changed == 'true'
@@ -61,12 +67,6 @@ jobs:
           files: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Compress repository contents with gzip
-        id: create_archive
-        if: steps.check_changes.outputs.changed == 'true'
-        run: |
-          git ls-files | xargs gzip -r -k
 
       - name: Crear distribución de script de instalación bootstrap.sh
         id: upload-release-asset
