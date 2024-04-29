@@ -1,4 +1,4 @@
-name: Create bin project release
+name: release bin project
 on:
   push:
     branches:
@@ -17,6 +17,9 @@ jobs:
         run: |
           if ! command -v zip &> /dev/null; then
               sudo apt update && sudo apt install -y zip
+              echo "zip installed successfully!"
+          else
+              echo "zip already installed!"
           fi
 
       - name: Checkout code
@@ -25,7 +28,7 @@ jobs:
       - name: Check if release prefix changed
         id: release_check_changes
         run: |
-          old_release_prefix=$(git show ${GITHUB_SHA}^:release_prefix)
+          old_release_prefix=$(git show ${GITHUB_SHA}~1:release_prefix)
           current_release_prefix=$(git show ${GITHUB_SHA}:release_prefix)
 
           if [ "$old_release_prefix" != "$current_release_prefix" ]; then
