@@ -66,7 +66,7 @@ jobs:
         id: create_archive
         if: steps.check_changes.outputs.changed == 'true'
         run: |
-          git ls-files | xargs gzip -r -k 'bindevs_${{ steps.read_release_prefix.outputs.prefix }}-${{ github.run_number }}.zip'
+          git ls-files | xargs gzip -r -k
 
       - name: Crear distribución de script de instalación bootstrap.sh
         id: upload-release-asset
