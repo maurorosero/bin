@@ -1,0 +1,58 @@
+name: Crear Release y Actualizar Repositorio Remoto en Panamatech Gitlab
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'bootstrap.sh'
+
+jobs:
+  create-release-and-update-remote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Leer prefijo del release desde el archivo release
+        id: get_release_prefix
+        run: |
+          RELEASE_PREFIX=$(cat release)
+          echo "::set-output name=prefix::$RELEASE_PREFIX"
+
+      - name: Crear release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Necesario para crear un release
+        with:
+          tag_name: ${{ steps.get_release_prefix.outputs.prefix }}-${{ github.run_number }}  # Usar el prefijo del release del archivo bootstrap.sh
+          release_name: ${{ steps.get_release_prefix.outputs.prefix }}-${{ github.run_number }}  # Nombre del release
+          body: |
+            Este release fue generado automáticamente cuando se modificó bootstrap.sh en el branch master.
+          draft: false
+          prerelease: false
+
+      - name: Subir archivo
+        id: upload-release-asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}  # Obtener la URL de subida del release creado
+          asset_path: ./bootstrap.sh  # Ruta al archivo a subir
+          asset_name: bootstrap.sh  # Nombre del archivo en el release
+          asset_content_type: application/octet-stream
+
+      - name: Push to Panamatech Gitlab Repository
+        env:
+          token: ${{ secrets.GITLAB_TOKEN }}
+        run: |
+          git config --global user.email "mauro.rosero@gmail.com"
+          git config --global user.name "Mauro Rosero P."
+          git remote set-url origin "https://oauth2:${token}@git.panamatech.net/mrosero/bin.git"
+          git push origin HEAD:master
+
