@@ -82,8 +82,9 @@ jobs:
       - name: Upload package
         run: |
           curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: application/octet-stream" \
+          -H "Content-Type: application/zip" \
           --data-binary @/tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip "${{ steps.get_latest_release.outputs.upload_url }}?name=bin-${{ steps.read_release_prefix.outputs.prefix }}.zip"
 
       - name: Clean up temporary directory
-        run: rm -rf /tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip
+        run: |
+          rm -rf /tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip
