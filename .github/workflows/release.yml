@@ -1,0 +1,49 @@
+name: Create Release on Bootstrap.sh Change
+
+on:
+  push:
+    paths:
+      - 'bootstrap.sh'
+  pull_request:
+    paths:
+      - 'bootstrap.sh'
+
+jobs:
+  create_release:
+    name: Create Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Read Release Prefix
+        id: read_release_prefix
+        run: |
+          RELEASE_PREFIX=$(cat release)
+          echo "::set-output name=prefix::$RELEASE_PREFIX"
+
+      - name: Check if bootstrap.sh changed
+        id: check_changes
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q 'bootstrap.sh'; then
+            echo "::set-output name=changed::true"
+          else
+            echo "::set-output name=changed::false"
+          fi
+
+      - name: Create Release
+        id: create_release
+        if: steps.check_changes.outputs.changed == 'true'
+        uses: actions/create-release@v1
+        with:
+          tag_name: 'v${{ steps.read_release_prefix.outputs.prefix }}.${{ github.run_number }}'
+          release_name: '${{ steps.read_release_prefix.outputs.prefix }}.${{ github.run_number }}'
+          body: |
+            Changes in bootstrap.sh detected. Automatic release created.
+          draft: false
+          prerelease: false
+          files: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
