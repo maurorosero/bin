@@ -3,15 +3,10 @@ on:
   push:
     branches:
       - master
-    paths:
-      - 'bootstrap.sh'
-      - 'release_prefix'
+
   pull_request:
     branches:
       - master
-    paths:
-      - 'bootstrap.sh'
-      - 'release_prefix'
 
 jobs:
   create_release:
