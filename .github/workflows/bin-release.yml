@@ -1,4 +1,4 @@
-name: release bin project
+name: Crea el paquete para instalación
 on:
   push:
     branches:
@@ -72,6 +72,7 @@ jobs:
           asset_path: ./bootstrap.sh
           asset_name: bootstrap.sh
           asset_content_type: application/octet-stream
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Compress repository contents with zip
         run: |
@@ -84,6 +85,7 @@ jobs:
           asset_path: /tmp/bin_${{ steps.read_release_prefix.outputs.prefix }}.zip
           asset_name: bin_${{ steps.read_release_prefix.outputs.prefix }}.zip
           asset_content_type: application/zip
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clean up
         run: |
