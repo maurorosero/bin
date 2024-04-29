@@ -53,3 +53,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Subir archivo
+        id: upload-release-asset
+        if: steps.check_changes.outputs.changed == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}  # Obtener la URL de subida del release creado
+          asset_path: ./bootstrap.sh  # Ruta al archivo a subir
+          asset_name: bootstrap.sh  # Nombre del archivo en el release
+          asset_content_type: application/octet-stream
