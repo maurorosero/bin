@@ -3,9 +3,15 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'bootstrap.sh'
+      - 'release'
   pull_request:
     branches:
       - master
+    paths:
+      - 'bootstrap.sh'
+      - 'release'
 
 jobs:
   create_release:
@@ -16,10 +22,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Check if bootstrap.sh changed
+      - name: Check if bootstrap.sh or release changed
         id: check_changes
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q 'bootstrap.sh'; then
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -E 'bootstrap.sh|release'; then
             echo "::set-output name=changed::true"
           else
             echo "::set-output name=changed::false"
