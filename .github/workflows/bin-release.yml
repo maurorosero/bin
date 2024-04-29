@@ -2,11 +2,11 @@ name: Create Release on Bootstrap.sh Change
 
 on:
   push:
-    paths:
-      - 'bootstrap.sh'
+    branches:
+      - master
   pull_request:
-    paths:
-      - 'bootstrap.sh'
+    branches:
+      - master
 
 jobs:
   create_release:
