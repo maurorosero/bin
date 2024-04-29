@@ -28,10 +28,10 @@ jobs:
       - name: Check if release prefix changed
         id: release_check_changes
         run: |
-          old_release_prefix=$(git show ${GITHUB_SHA}~1:release_prefix)
-          current_release_prefix=$(git show ${GITHUB_SHA}:release_prefix)
+          old_checksum=$(git show ${GITHUB_SHA}~1:release_prefix | md5sum | awk '{print $1}')
+          current_checksum=$(git show ${GITHUB_SHA}:release_prefix | md5sum | awk '{print $1}')
 
-          if [ "$old_release_prefix" != "$current_release_prefix" ]; then
+          if [ "$old_checksum" != "$current_checksum" ]; then
              echo "::set-output name=changed::true"
           else
              echo "::set-output name=changed::false"
@@ -73,7 +73,7 @@ jobs:
           asset_name: bootstrap.sh
           asset_content_type: application/octet-stream
 
-      - name: Compress repository contents with gzip
+      - name: Compress repository contents with zip
         run: |
           zip -r /tmp/bin_${{ steps.read_release_prefix.outputs.prefix }}.zip .
 
