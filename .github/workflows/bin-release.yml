@@ -25,11 +25,20 @@ jobs:
       - name: Check if bootstrap.sh or release changed
         id: check_changes
         run: |
-            if [ "$(git diff --raw ${{ github.event.before }} ${{ github.sha }} bootstrap.sh release | wc -l)" -gt "0" ]; then
-                echo "::set-output name=changed::true"
-            else
-                echo "::set-output name=changed::false"
-            fi
+          # Calcula el hash MD5 del contenido anterior y actual de bootstrap.sh
+          old_bootstrap_hash=$(git show ${GITHUB_SHA}^:bootstrap.sh | md5sum | awk '{print $1}')
+          current_bootstrap_hash=$(git show ${GITHUB_SHA}:bootstrap.sh | md5sum | awk '{print $1}')
+
+          # Calcula el hash MD5 del contenido anterior y actual de release
+          old_release_hash=$(git show ${GITHUB_SHA}^:release | md5sum | awk '{print $1}')
+          current_release_hash=$(git show ${GITHUB_SHA}:release | md5sum | awk '{print $1}')
+
+          # Compara los hashes para verificar si ha cambiado el contenido
+          if [ "$old_bootstrap_hash" != "$current_bootstrap_hash" ] || [ "$old_release_hash" != "$current_release_hash" ]; then
+             echo "::set-output name=changed::true"
+          else
+             echo "::set-output name=changed::false"
+          fi
 
       - name: Read Bin Release Prefix (${{ steps.check_changes.outputs.changed }})
         id: read_release_prefix
