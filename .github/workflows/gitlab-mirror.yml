@@ -31,4 +31,4 @@ jobs:
           git config --global user.email "${{ steps.obtener-usuario.outputs.email }}"
           git config --global user.name "${{ steps.obtener-usuario.outputs.nombre_completo }}"
           git remote set-url origin "https://oauth2:${token}@${{ vars.MIRROR_URL }}"
-          git push origin HEAD:master
+          git push origin HEAD:master -f
