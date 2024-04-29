@@ -31,8 +31,8 @@ jobs:
       - name: Check if release prefix changed
         id: release_check_changes
         run: |
-          old_checksum=$(git show ${GITHUB_SHA}~1:release_prefix | md5sum | awk '{print $1}')
-          current_checksum=$(git show ${GITHUB_SHA}:release_prefix | md5sum | awk '{print $1}')
+          old_checksum=$(git show ${GITHUB_SHA}~1:.release_prefix | md5sum | awk '{print $1}')
+          current_checksum=$(git show ${GITHUB_SHA}:.release_prefix | md5sum | awk '{print $1}')
 
           if [ "$old_checksum" != "$current_checksum" ]; then
              echo "::set-output name=changed::true"
@@ -52,15 +52,21 @@ jobs:
       - name: Read project release prefix
         id: read_release_prefix
         run: |
-          RELEASE_PREFIX=$(cat release_prefix)
+          RELEASE_PREFIX=$(cat .release_prefix)
           echo "::set-output name=prefix::$RELEASE_PREFIX"
+
+      - name: Read project release suffix
+        id: read_release_suffix
+        run: |
+          RELEASE_SUFFIX=$(cat .release_suffix)
+          echo "::set-output name=prefix::$RELEASE_SUFFIX"
 
       - name: Create new project version/release
         id: create_release
         uses: actions/create-release@v1
         with:
           tag_name: 'v${{ steps.read_release_prefix.outputs.prefix }}.${{ github.run_number }}'
-          release_name: 'Release ${{ steps.read_release_prefix.outputs.prefix }}'
+          release_name: 'Release ${{ steps.read_release_prefix.outputs.prefix }} ${{ steps.read_release_suffix.outputs.suffix }}'
           body: |
             Automatic release created.
           draft: false
