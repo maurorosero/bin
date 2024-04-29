@@ -1,5 +1,4 @@
-name: Create Release on Bootstrap.sh Change
-
+name: Create Release when bootstrap changed
 on:
   push:
     branches:
@@ -17,14 +16,25 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Check if bootstrap.sh changed
+        id: check_changes
+        run: |
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q 'bootstrap.sh'; then
+            echo "::set-output name=changed::true"
+          else
+            echo "::set-output name=changed::false"
+          fi
+
       - name: Read Bin Release Prefix
         id: read_release_prefix
+        if: steps.check_changes.outputs.changed == 'true'
         run: |
           RELEASE_PREFIX=$(cat release)
           echo "::set-output name=prefix::$RELEASE_PREFIX"
 
       - name: Create Bin Release
         id: create_release
+        if: steps.check_changes.outputs.changed == 'true'
         uses: actions/create-release@v1
         with:
           tag_name: 'v${{ steps.read_release_prefix.outputs.prefix }}.${{ github.run_number }}'
