@@ -76,7 +76,10 @@ jobs:
 
       - name: Compress repository contents with zip
         run: |
-          zip -r /tmp/bin_${{ steps.read_release_prefix.outputs.prefix }}.zip .
+          zip -r /tmp/bin_${{ steps.read_release_prefix.outputs.prefix }}.zip . \
+              -x ".git*" \
+              -x ".github*" \
+              -x ".directory"
 
       - name: Upload package
         uses: actions/upload-release-asset@v1
