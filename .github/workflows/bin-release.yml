@@ -98,3 +98,16 @@ jobs:
       - name: Clean up
         run: |
           rm /tmp/bin_${{ steps.read_release_prefix.outputs.prefix }}.zip
+
+      - name: Delete specific asset from release
+        run: |
+          # Configurar variables
+          release_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.id')
+          asset_id=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/${release_id}/assets" | jq -r '.[] | select(.name == "source_code.zip") | .id')
+
+          # Eliminar el asset
+          curl -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${{ github.repository }}/releases/assets/${asset_id}"
+        if: always()
