@@ -20,15 +20,25 @@ jobs:
         uses: actions/github-script@v4
         with:
           script: |
+<<<<<<< HEAD
             const result = await github.users.getByUsername({ username: '${{ github.actor }}' });
             return JSON.stringify(result);
+=======
+            const response = await github.users.getByUsername({ username: '${{ github.actor }}' });
+            console.log('::set-output name=nombre_completo::' + response.data.name);
+>>>>>>> parent of 5a59c81 ([MODIFIED] Usar el email del usuario de github)
 
       - name: Push to Panamatech Gitlab Repository
         env:
           token: ${{ secrets.GITLAB_TOKEN }}
         run: |
+<<<<<<< HEAD
           git config --global user.email "${{ fromJson(steps.obtener-usuario.outputs.result).data.email }}"
           git config --global user.name "${{ fromJson(steps.obtener-usuario.outputs.result).data.name }}"
+=======
+          git config --global user.email "${{ vars.REPO_EMAIL }}"
+          git config --global user.name "${{ steps.obtener-usuario.outputs.nombre_completo }}"
+>>>>>>> parent of 5a59c81 ([MODIFIED] Usar el email del usuario de github)
           git remote set-url origin "https://oauth2:${token}@${{ vars.MIRROR_URL }}"
           git push origin HEAD:master
 
