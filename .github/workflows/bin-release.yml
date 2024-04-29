@@ -17,39 +17,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Check if bootstrap.sh or release changed
-        id: check_changes
+      - name: Check if release prefix changed
+        id: release_check_changes
         run: |
-          # Calcula el hash MD5 del contenido anterior y actual de bootstrap.sh
-          old_bootstrap_hash=$(git show ${GITHUB_SHA}^:bootstrap.sh | md5sum | awk '{print $1}')
-          current_bootstrap_hash=$(git show ${GITHUB_SHA}:bootstrap.sh | md5sum | awk '{print $1}')
-
           # Calcula el hash MD5 del contenido anterior y actual de release
-          old_release_hash=$(git show ${GITHUB_SHA}^:release | md5sum | awk '{print $1}')
-          current_release_hash=$(git show ${GITHUB_SHA}:release | md5sum | awk '{print $1}')
+          old_release_hash=$(git show ${GITHUB_SHA}^:release_prefix | md5sum | awk '{print $1}')
+          current_release_hash=$(git show ${GITHUB_SHA}:release_prefix | md5sum | awk '{print $1}')
 
           # Compara los hashes para verificar si ha cambiado el contenido
-          if [ "$old_bootstrap_hash" != "$current_bootstrap_hash" ] || [ "$old_release_hash" != "$current_release_hash" ]; then
+          if [ "$old_release_hash" != "$current_release_hash" ]
+          then
              echo "::set-output name=changed::true"
           else
              echo "::set-output name=changed::false"
           fi
           
-      - name: Read Bin Release Prefix (${{ steps.check_changes.outputs.changed }})
+      - name: Read project release prefix (${{ steps.realease_check_changes.outputs.changed }})
         id: read_release_prefix
         run: |
           RELEASE_PREFIX=$(cat release_prefix)
           echo "::set-output name=prefix::$RELEASE_PREFIX"
 
-      - name: Create Project Release
+      - name: Create new project version/release
         id: create_release
-        if: steps.check_changes.outputs.changed == 'true'
         uses: actions/create-release@v1
         with:
           tag_name: 'v${{ steps.read_release_prefix.outputs.prefix }}.${{ github.run_number }}'
-          release_name: 'Release ${{ steps.read_release_prefix.outputs.prefix }}.${{ github.run_number }}'
+          release_name: 'Release ${{ steps.read_release_prefix.outputs.prefix }}'
           body: |
-            Changes in bootstrap.sh detected. Automatic release created.
+            Automatic release created.
           draft: false
           prerelease: false
           files: release_prefix
@@ -58,7 +54,6 @@ jobs:
 
       - name: Crear distribución de script de instalación bootstrap.sh
         id: upload-bootstrap-asset
-        if: steps.check_changes.outputs.changed == 'true'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -73,29 +68,18 @@ jobs:
         run: |
           git ls-files | xargs gzip -r -k -9 -n > /tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip
 
-      - name: Obtener último release
-        id: get_latest_release
-        run: |
-          latest_release_url=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.upload_url' | cut -d "{" -f 1)
-          echo "::set-output name=upload_url::$latest_release_url"
-
       - name: Actualizar paquete de instalación
-        id: upload-packages-asset
+        id: upload-package-asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_latest_release.outputs.upload_url }}
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: /tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip
           asset_name: bin-${{ steps.read_release_prefix.outputs.prefix }}.zip
           asset_content_type: application/zip
 
-      - name: Upload package
-        run: |
-          curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Content-Type: application/zip" \
-          --data-binary @/tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip "${{ steps.get_latest_release.outputs.upload_url }}?name=bin-${{ steps.read_release_prefix.outputs.prefix }}.zip"
-
       - name: Clean up temporary directory
+        id: remove-temporal-files
         run: |
           rm -rf /tmp/bin-${{ steps.read_release_prefix.outputs.prefix }}.zip
