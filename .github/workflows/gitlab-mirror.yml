@@ -1,4 +1,4 @@
-name: Actualizar Repositorio Remoto en Panamatech Gitlab
+name: Espejo en Repositorio Remoto en Panamatech Gitlab
 
 on:
   push:
@@ -15,12 +15,12 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Push to Panamatech Gitlab Repository
+      - name: Push to Panamatech Gitlab Repository (${{ env.REPO_EMAIL }})
         env:
           token: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          git config --global user.email "mauro.rosero@gmail.com"
-          git config --global user.name "Mauro Rosero P."
+          git config --global user.email "${{ env.REPO_EMAIL }}"
+          git config --global user.name "${{ steps.get-user-info.outputs.full_name }}"
           git remote set-url origin "https://oauth2:${token}@git.panamatech.net/mrosero/bin.git"
           git push origin HEAD:master
 
