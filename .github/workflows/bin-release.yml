@@ -31,7 +31,7 @@ jobs:
             echo "::set-output name=changed::false"
           fi
 
-      - name: Read Bin Release Prefix
+      - name: Read Bin Release Prefix (${{ steps.check_changes.outputs.changed }})
         id: read_release_prefix
         if: steps.check_changes.outputs.changed == 'true'
         run: |
