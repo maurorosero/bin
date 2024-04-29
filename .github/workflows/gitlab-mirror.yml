@@ -20,16 +20,15 @@ jobs:
         uses: actions/github-script@v4
         with:
           script: |
-            const response = await github.users.getByUsername({ username: '${{ github.actor }}' });
-            console.log('::set-output name=nombre_completo::' + response.data.name);
-            console.log('::set-output name=email::' + response.data.email);
+            const result = await github.users.getByUsername({ username: '${{ github.actor }}' });
+            return JSON.stringify(result);
 
-      - name: Push to Panamatech Gitlab Repository (${{ vars.REPO_EMAIL }})
+      - name: Push to Panamatech Gitlab Repository
         env:
           token: ${{ secrets.GITLAB_TOKEN }}
         run: |
-          git config --global user.email "${{ steps.obtener-usuario.outputs.email }}"
-          git config --global user.name "${{ steps.obtener-usuario.outputs.nombre_completo }}"
+          git config --global user.email "${{ fromJson(steps.obtener-usuario.outputs.result).data.email }}"
+          git config --global user.name "${{ fromJson(steps.obtener-usuario.outputs.result).data.name }}"
           git remote set-url origin "https://oauth2:${token}@${{ vars.MIRROR_URL }}"
           git push origin HEAD:master
 
