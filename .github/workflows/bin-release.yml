@@ -62,7 +62,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Subir archivo
+      - name: Compress repository contents with gzip
+        id: create_archive
+        if: steps.check_changes.outputs.changed == 'true'
+        run: |
+          git ls-files | xargs gzip -r -k 'bindevs_${{ steps.read_release_prefix.outputs.prefix }}-${{ github.run_number }}.zip'
+
+      - name: Crear distribución de script de instalación bootstrap.sh
         id: upload-release-asset
         if: steps.check_changes.outputs.changed == 'true'
         uses: actions/upload-release-asset@v1

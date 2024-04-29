@@ -79,3 +79,21 @@ install_ansible_bsd() {
     echo "${pymsg_013}"
 }
 
+# Función para instalar Ansible (MacOS, Debian y derivados, Redhat y derivados, Arch Linux)
+install_ansible() {
+	# Verificar distribución y ejecutar la función correspondiente para instalar Ansible
+	if [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
+		install_ansible_debian
+	elif [ -f /etc/redhat-release ]; then
+		install_ansible_redhat
+	elif [ "$(uname)" == "Darwin" ]; then
+		install_ansible_macos
+	elif [ -f /etc/arch-release ]; then
+		install_ansible_arch
+	elif [ -f /etc/rc.conf ]; then
+		install_ansible_bsd
+	else
+		echo "${pymsg_014}"
+		exit 1
+	fi
+}

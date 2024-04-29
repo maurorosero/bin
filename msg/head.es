@@ -11,7 +11,7 @@
 #==============================================================================
 #==============================================================================
 
-head_000="MRosero Personal Developer Utilities"
+head_000="Utilitarios de Mauro Rosero P."
 head_001="El comando 'dialog' no está instalado. Por favor, ejecute bootstrap.sh."
 head_installing="Instalando"
 head_info="INFO"
