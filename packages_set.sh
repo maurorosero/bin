@@ -75,7 +75,7 @@ apps_title="${pkmsg_000}"
 mz_yesno "${pkmsg_003}"
 if [ "${result}" == "0" ]
 then
-    apps_file="${HOME}/requirements.txt"
+    apps_file="${HOME}/bin/requirements.txt"
     if [ -f "${apps_file}" ]
     then
         sudo bash -c "$(declare -f install); install ${HOME} ${apps_file}"

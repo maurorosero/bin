@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#title           : devops_install.sh
+#title           : devops.sh
 #description     : Install Ansible
 #author          : MRP/mrp - Mauro Rosero P.
 #company email   : mrosero@panamatech.net
