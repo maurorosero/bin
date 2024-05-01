@@ -16,7 +16,7 @@ Para esto he diseñado dos (2) formas de uso o despliegue del mismo:
 
 ### Usuario
 
-Desde este enlace, descargue el archivo <a href="docs/install/install_bin.sh" download>/tmp/install_bin.sh</a> y realice los siguietes pasos:
+Desde este enlace, descargue el archivo <a href="/scripts/install_bin.sh" download>/tmp/install_bin.sh</a> y realice los siguietes pasos:
 
     $ cd $HOME
     $ chmod a+x /tmp/install_bin.sh
