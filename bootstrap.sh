@@ -13,6 +13,11 @@
 
 install() {
 	local install_home=$1
+    local bin_home=${install_home}/bin
+	local bin_token=$2
+	local bin_owner=$3
+	local bin_repo=$4
+	local download_path=$5
 
 	# Load bootstrap base messages
 	set_messages() {
@@ -21,9 +26,9 @@ install() {
 		pymsg_003="Python instalado o actualizado correctamente."
 	}
 
-	if [ -f "${install_home}/bin/msg/bootstrap.$LANG" ]
+	if [ -f "${bin_home}/msg/bootstrap.$LANG" ]
 	then
-		source "${install_home}/bin/msg/bootstrap.$LANG"
+		source "${bin_home}/msg/bootstrap.$LANG"
 	else
 		set_messages
 	fi
@@ -54,22 +59,109 @@ install() {
 		echo "${pymsg_003}"
 	}
 
+	bin_download() {
+		local gh_auth="Authorization: token $1"
+		local gh_owner=$2
+		local gh_repos=$3
+		local gh_headr="Accept: application/vnd.github.v3+json"
+		local gh_url="https://api.github.com"
+		local gh_download=$4
+
+		release=$(wget --header="${gh_auth}" --header="${gh_headr}" -qO - ${gh_url}/repos/${gh_owner}/${gh_repos}/releases/latest | grep -o '"name": *"[^"]*"' | sed 's/"name": "\(.*\)"/\1/' | grep "Release" | cut -d\  -f2)
+		if [ "${release}" == "" ]
+		then
+			DOWNLOAD_FILE="none"
+		else
+		    echo "Release ${release}"
+			local gh_asset=${gh_repos}_${release}.zip
+
+			id_asset=$(curl -s -H "${gh_auth}" -H "${gh_headr}" "${gh_url}/repos/${gh_owner}/${gh_repos}/releases/latest" | jq -r --arg gh_asset "$gh_asset" '.assets[] | select(.name == $gh_asset) | .id')
+			if [ "${id_asset}" == "" ]
+			then
+				DOWNLOAD_FILE="none"
+			else
+				local download_file="${gh_download}/${gh_asset}"
+				wget --header="${gh_auth}" --header="Accept: application/octet-stream" -O ${download_file} ${gh_url}/repos/${gh_owner}/${gh_repos}/releases/assets/${id_asset}
+				if [ $? == 0 ]
+				then
+					DOWNLOAD_FILE=${download_file}
+				else
+					DOWNLOAD_FILE="none"
+				fi
+			fi
+		fi
+	}
+
 	# Instalar o actualizar Python a la última versión y pre-requisitos bootstrap
 	install_or_update_python
 
+	# Download bin zip project to /tmp
+	DOWNLOAD_FILE=""
+	if [ ! -d "${bin_home}/.git" ]
+	then
+		bin_download "${bin_token}" "${bin_owner}" "${bin_repo}" "${download_path}"
+		echo "Paquete bin fue descargado en ${DOWNLOAD_FILE}"
+		cd $HOME
+		unzip ${DOWNLOAD_FILE}
+		echo "Paquete bin ${DOWNLOAD_FILE} fue instaldo!"
+		rm -f ${DOWNLOAD_FILE}
+		echo -e "\n====================================================="
+		echo "   Esta instalación se realizó en modo usuario.      "
+		echo "   Utilice este bash script para actualizar.         "
+		echo "-----------------------------------------------------"
+		echo "   Si desea convertirla en modo de desarrollador,    "
+		echo "   y aportar a esta caja de herramientas.            "
+		echo "   Solicite e instale su certificado ssh autorizado  "
+		echo "   a Mauro Rosero P.:                                "
+		echo "       - Email: mauro@rosero.one                     "
+		echo "       - Email: mauro.rosero@gmail.com               "
+		echo "   entonces:                                         "
+		echo "       cd \$HOME                                     "
+		echo "       rm -rf bin                                    "
+		echo "       git clone git@github.com:maurorosero/bin.git  "
+		echo -e "=====================================================\n"
+	else
+		echo -e "\n================================================="
+		echo "   Esta instalación está en modo desarrollador   "
+		echo "-------------------------------------------------"
+		echo "   Debe tener configurado su certificado ssh     "
+		echo "   Use git pull para actualizar bin toolbox:     "
+		echo "       cd \$HOME/bin                             "
+		echo "       git pull                                  "
+		echo -e "=================================================\n"
+	fi
 }
 
 # Main.- Llamar a la función con sudo
 clear
 
 # Load head messages
-if [ -f "${HOME}/bin/msg/head.$LANG" ]
+LOCAL_BIN=${HOME}/bin
+GTH_TOKEN=${LOCAL_BIN}/.release_token
+BIN_OWNER=maurorosero
+BIN_REPOS=bin
+DOWNLOAD_PATH=/tmp
+DOWNLOAD_FILE=""
+
+if [ -f "${LOCAL_BIN}/msg/head.$LANG" ]
 then
-	source "${HOME}/bin/msg/head.$LANG"
+	source "${LOCAL_BIN}/msg/head.$LANG"
 else
 	head_000="Utilitarios de Mauro Rosero P. (bootstrap bin)"
 fi	
 
+GB_TOKEN=$(echo "Z2l0aHViX3BhdF8xMUFKTUZBT1kwYjVrNndrSzdHSGx4X3VHeHRPTlVVR0tvUUh2NnlWWnJMNEt2
+eUZjYTM0TkFmM1VybUlWZ1dmNjlTSU9PWjVGTHZVbExlQ3VSCg==" | base64 -d)
+if [ -n "${GITHUB_TOKEN}" ]
+then
+	GB_TOKEN=${GITHUB_TOKEN}
+else
+	if [ -f "${GTH_TOKEN}" ]
+	then
+		GB_TOKEN=$(cat < ${GTH_TOKEN})
+	fi
+fi
+
 echo "${head_000}"
 echo "------------------------------------------------------------------------------"
-sudo bash -c "$(declare -f install); install ${HOME}"
+sudo bash -c "$(declare -f install); install ${HOME} '${GB_TOKEN}' ${BIN_OWNER} ${BIN_REPOS} ${DOWNLOAD_PATH}"
