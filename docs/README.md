@@ -16,12 +16,12 @@ Para esto he diseñado dos (2) formas de uso o despliegue del mismo:
 
 ### Usuario
 
-<a href="bootstrap.sh" download>Descargar el instalador bootstrap.sh desde aquí</a>
+Desde este enlace, descargue el archivo <a href="bootstrap.sh" download>/tmp/bootstrap.sh</a> y realice los siguietes pasos:
 
     $ cd $HOME
-    $ chmod a+x bootstrap.sh
-    $ ./bootstrap.sh
-    $ rm ./boostrap.sh
+    $ chmod a+x /tmp/bootstrap.sh
+    $ /tmp/bootstrap.sh
+    $ rm /tmp/boostrap.sh
 
 En este punto, se debe haber creado la **carpeta bin** dentro de la **carpeta HOME** de su usuario.
 
