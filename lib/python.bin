@@ -1,5 +1,4 @@
 acme-tiny>=4.0.0
-ansible
 ansible-modules-hashivault
 awxkit
 cffi
@@ -15,4 +14,3 @@ PyOpenSSL>=0.15
 testresources
 yq
 whiptail-dialogs
-

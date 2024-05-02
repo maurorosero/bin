@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#bash script     : packages_set.sh
+#bash script     : py_packages.sh
 #apps            : MRosero Personal Developer Utilities
-#description     : Base OS Packages Installer
+#description     : Python3 Packages Installer
 #author		     : MRP/mrp - Mauro Rosero P.
 #company email   : mauro@rosero.one
 #personal email  : mauro.rosero@gmail.com
@@ -27,10 +27,10 @@ install() {
     # Load packages messages
     load_messages "${install_home}" "packages"
     title="${head_000}"
-    apps_title="${pkmsg_000}"
+    apps_title="${pkmsg_100}"
 
     # Install Base Packages with OS-Installer
-    install_packages ${install_file}
+    pip_packages ${install_file}
 }
 
 # Main.- Llamar a la función con sudo
@@ -48,7 +48,7 @@ load_messages "${HOME}" "head"
 # Load packages messages
 load_messages "${HOME}" "packages"
 title="${head_000}"
-apps_title="${pkmsg_000}"
+apps_title="${pkmsg_100}"
 
 # Check if dialog is not installed, exited!
 if ! command -v dialog >/dev/null 2>&1
@@ -66,10 +66,10 @@ then
     exit 2
 fi
 
-mz_yesno "${pkmsg_003}"
+mz_yesno "${pkmsg_012}"
 if [ "${result}" == "0" ]
 then
-    base_apps_file="requirements.bin"
+    base_apps_file="python.bin"
     apps_file="${HOME}/bin/lib/${base_apps_file}"
     if [ -f "${HOME}/${base_apps_file}" ]
     then
@@ -77,26 +77,10 @@ then
     fi
     if [ -f "${apps_file}" ]
     then
-        mz_inputpass "${pklbl_001}" "${pkhlp_001}"
-        if [ "${codex}" == "0" ]
-        then
-            if [ -n "${value}" ]
-            then
-                clear
-                echo "${value}" | sudo -S bash -c "$(declare -f install); install ${HOME} ${apps_file}"
-                if [ "$?" == "0" ]
-                then
-                    read key
-                    clear
-                else
-                    show_error_dialog "${head_error}" "${pkmsg_008}"
-                fi
-            else
-                show_error_dialog "${head_error}" "${pkmsg_007}"
-            fi
-        else
-            show_error_dialog "${head_error}" "${pkmsg_006}"
-        fi
+        clear
+        bash -c "$(declare -f install); install ${HOME} ${apps_file}"
+        read key
+        clear
     else
         show_error_dialog "${head_error}" "${pkmsg_005}"
     fi

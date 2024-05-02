@@ -16,7 +16,7 @@ show_progress() {
   local message=$1
   local percent=$2
 
-  echo "$percent" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${message}" 18 80 0
+  echo "$percent" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${message}" 18 70 0
 }
 
 # Función para verificar si un paquete está instalado
@@ -33,7 +33,11 @@ get_osname() {
         os_name=$(sw_vers -productVersion | awk -F '.' '{print "macOS " $1 "." $2}')
     elif [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
         # En sistemas Debian y derivados, instalamos o actualizamos a través de apt
-        os_name=$(lsb_release -i -s)
+        os_name=$(grep "^ID_LIKE=" /etc/os-release | cut -d= -f2)
+        if grep -qi "${head_ubuntu}" /etc/os-release
+        then
+            os_name="${head_ubuntu}"
+        fi
     elif [ -f /etc/redhat-release ]; then
         # En sistemas Red Hat, instalamos o actualizamos a través de dnf
         os_name=$(awk '{print $1}' /etc/redhat-release)
@@ -57,7 +61,7 @@ install_os_packages() {
         log=$(brew install ${pkg_name} 2>&1)
     elif [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
         # En sistemas Debian y derivados, instalamos o actualizamos a través de apt
-        log=$(apt install ${pkg_name} 2>&1)
+        log=$(apt-get -y install ${pkg_name} 2>&1)
     elif [ -f /etc/redhat-release ]; then
         # En sistemas Red Hat, instalamos o actualizamos a través de dnf
         log=$(dnf install ${pkg_name} 2>&1)
@@ -80,10 +84,9 @@ snap_install() {
 }
 
 # Función para instalar paquetes pro medio de snapd
-python_pip_install() {
+python_pip3_install() {
     local pkg_name=$1
-    python3 -m pip install --upgrade pip
-    package_info=$(pip show "$pkg_name" 2>/dev/null)
+    package_info=$(python -m pip show "$pkg_name" 2>/dev/null)
     if [ -z "$package_info" ]
     then
         log=$(python3 -m pip install --user ${pkg_name} 2>&1)
@@ -95,8 +98,6 @@ python_pip_install() {
 # Instalar paquetes de sistema operativo
 install_packages() {
   local packages_file="$1"
-  local title="$2"
-  local apps_title="$3"
   local total_lines=$(wc -l <"${packages_file}")
   local current_line=0
 
@@ -108,18 +109,18 @@ install_packages() {
     install_os_packages ${line}
 
     # Mostrar la barra de progreso
-    show_progress "${head_installing}: $line\n\n$log" "$progress"
+    title="${head_000}"
+    show_progress "\n${head_installing}: $line\n\n$log" "$progress" "${title}" "${apps_title}"
+    sleep 3
   done <"${packages_file}"
 
   # Finalizar la barra de progreso
-  echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
+  show_progress "\n${pkmsg_end}" "100"
 }
 
 # Instalar paquetes con snap
-snap_packages() {
+snapd_packages() {
   local packages_file="$1"
-  local title="$2"
-  local apps_title="$3"
   local total_lines=$(wc -l <"${packages_file}")
   local current_line=0
 
@@ -131,18 +132,19 @@ snap_packages() {
     snap_install ${line}
 
     # Mostrar la barra de progreso
-    show_progress "${head_installing}: $line\n\n$log" "$progress"
+    title="${head_000}"
+    apps_title="${pkmsg_300}"
+    show_progress "\n${head_installing}: $line\n\n$log" "$progress"
+    sleep 3
   done <"${packages_file}"
 
   # Finalizar la barra de progreso
-  echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
+  show_progress "\n${pkmsg_end}" "100"
 }
 
 # Instalar paquetes con python-pip
-snap_packages() {
+pip_packages() {
   local packages_file="$1"
-  local title="$2"
-  local apps_title="$3"
   local total_lines=$(wc -l <"${packages_file}")
   local current_line=0
 
@@ -151,14 +153,17 @@ snap_packages() {
     local progress=$((current_line * 100 / total_lines))
 
     # Instalar el paquete usando snap
-    python_pip_install ${line}
+    python_pip3_install ${line}
 
     # Mostrar la barra de progreso
-    show_progress "${head_installing}: $line\n\n$log" "$progress"
+    title="${head_000}"
+    apps_title="${pkmsg_100}"
+    show_progress "\n${head_installing}: $line\n\n$log" "$progress"
+    sleep 3
   done <"${packages_file}"
 
   # Finalizar la barra de progreso
-  echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
+  show_progress "\n${pkmsg_end}" "100"
 }
 
 get_os_family() {

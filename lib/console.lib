@@ -11,12 +11,13 @@
 #==============================================================================
 #==============================================================================
 
+CWIDTH=70
+
 ### Yes/No Input
 mz_yesno() {
   local label=$1
-  local title=$2
-  local apps_title=$3
-  dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --yesno "\n${label}" 6 80
+
+  dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --yesno "\n${label}" 6 ${CWIDTH}
   result=$?
 }
 
@@ -25,7 +26,7 @@ mz_inputbox() {
   local label="$1"
   local helper="$2"
   exec 3>&1;
-  value=$(dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --inputbox "\n${label}\n${helper}" 10 80 "$3" 2>&1 1>&3);
+  value=$(dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --inputbox "\n${label}\n${helper}" 10 ${CWIDTH} "$3" 2>&1 1>&3);
   codex=$?;
   exec 3>&-;
 }
@@ -35,7 +36,7 @@ mz_inputpass(){
   local label="$1"
   local helper="$2"
   exec 3>&1;
-  value=$(dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --passwordbox "\n${label}\n${helper}" 10 80 "$3" 2>&1 1>&3);
+  value=$(dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --passwordbox "\n${label}\n${helper}" 10 ${CWIDTH} "$3" 2>&1 1>&3);
   codex=$?;
   exec 3>&-;
 }
@@ -74,8 +75,21 @@ show_error_dialog() {
     exec 3>&1;
 
     # Mostrar el cuadro de diálogo
-    dialog --backtitle "${title}" --title "${msgtype} - ${apps_title}" --msgbox "\n${message}" 8 60
-    dialog --and-widget --msgbox "\n${message}"
+    dialog --backtitle "${title}" --title "${msgtype} - ${apps_title}" --msgbox "\n${message}" 8 70
+    #dialog --and-widget --msgbox "\n${message}"
 
     exec 3>&-;
+}
+
+load_messages() {
+    local MSG_HOME="$1/bin/msg"
+    local MSG_FILE="$2"
+    local LANG_DEFAULT="es"
+
+    if [ -f "${MSG_HOME}/${MSG_FILE}.${LANG}" ]
+    then
+        source "${MSG_HOME}/${MSG_FILE}.${LANG}"
+    else
+        source "${MSG_HOME}/${MSG_FILE}.${LANG_DEFAULT}"
+    fi
 }

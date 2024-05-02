@@ -65,15 +65,18 @@ Es una colección de programas python, script en bash, librerías, y otras varia
 |                      |            | Comando:   hexroute 192.168.20.64/26 192.168.10.62            |
 |                      |            | Resultado: 1a:c0:a8:14:40:c0:a8:0a:3e                         |
 |                      |            |                                                               |
-| packages_set.sh      | Escritorio | Instala una lista de paquetes dados en requirements.txt       |
-|                      | (OS)       | de mi elección personal.                                      |
+| packages_set.sh      | Escritorio | Instala una lista de paquetes, ya previamente seleccionados   |
+|                      | (OS)       | Para una lista propia, crea archivo requirements.bin en HOME  |
+| snap_packages.sh     | Escritorio | Instala una lista de paquetes snap, previamente seleccionados |
+|                      | (OS)       | Para una lista propia, crea archivo snap.bin en HOME          |
+| devops_packages.sh   | Escritorio | Instala lista adicional de paquetes. Para desarrolladores.    |
+|                      | (OS)       | Para una lista propia, crea archivo devops.bin en HOME        |
+| py_packages.sh       | Escritorio | Instala lista de paquetes python.                             |
+|                      | (OS)       | Para una lista propia, crea archivo python.bin en HOME        |
 |                      |            |                                                               |
 | bootstrap.sh         | Install    | Actualiza este toolbox a la ú ltima versión (modo: usuario)   |
 |                      |            |                                                               |
-| devops.sh            | Devops     | Instala ansible y el conjunto de herramientas y aplicaciones  |
-|                      |            | que uso como desarrollador que incluye infraestructura.       |
-|                      |            |                                                               |
-|                      |            |                                                               |
+
 
 
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#bash script     : packages_set.sh
+#bash script     : devops_packages.sh
 #apps            : MRosero Personal Developer Utilities
-#description     : Base OS Packages Installer
+#description     : Devops OS Packages Installer
 #author		     : MRP/mrp - Mauro Rosero P.
 #company email   : mauro@rosero.one
 #personal email  : mauro.rosero@gmail.com
@@ -27,7 +27,7 @@ install() {
     # Load packages messages
     load_messages "${install_home}" "packages"
     title="${head_000}"
-    apps_title="${pkmsg_000}"
+    apps_title="${pkmsg_200}"
 
     # Install Base Packages with OS-Installer
     install_packages ${install_file}
@@ -48,7 +48,7 @@ load_messages "${HOME}" "head"
 # Load packages messages
 load_messages "${HOME}" "packages"
 title="${head_000}"
-apps_title="${pkmsg_000}"
+apps_title="${pkmsg_200}"
 
 # Check if dialog is not installed, exited!
 if ! command -v dialog >/dev/null 2>&1
@@ -66,10 +66,10 @@ then
     exit 2
 fi
 
-mz_yesno "${pkmsg_003}"
+mz_yesno "${pkmsg_011}"
 if [ "${result}" == "0" ]
 then
-    base_apps_file="requirements.bin"
+    base_apps_file="devops.bin"
     apps_file="${HOME}/bin/lib/${base_apps_file}"
     if [ -f "${HOME}/${base_apps_file}" ]
     then

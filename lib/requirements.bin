@@ -8,6 +8,8 @@ lsof
 mutt
 net-tools
 nmap
+pipx
+python3-pip
 python3-gitlab
 remina
 sops
