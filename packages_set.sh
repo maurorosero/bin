@@ -12,8 +12,9 @@
 #==============================================================================
 
 install() {
-	local install_home=$1
-    local install_file=$2
+    local install_mode=$1
+	local install_home=$2
+    local install_file=$3
 		
 	# Load bootstrap messages
 	if [ -f "${install_home}/bin/msg/packages.$LANG" ]
@@ -29,8 +30,17 @@ install() {
 	# Load Installer Functions
 	source "${install_home}/bin/lib/packages.lib"
    
-    # Execute packages installation function
-    install_packages ${install_file}
+    # Execute packages with os-packager
+    if [ "${install_mode}" == "PKGS" ]
+    then
+        install_packages ${install_file}
+    fi
+
+    # Execute packages with snapd
+    if [ "${install_mode}" == "SNAP" ]
+    then
+        snap_packages ${install_file}
+    fi
 }
 
 # Main.- Llamar a la función con sudo
@@ -81,7 +91,7 @@ then
     fi
     if [ -f "${apps_file}" ]
     then
-        sudo bash -c "$(declare -f install); install ${HOME} ${apps_file}"
+        sudo bash -c "$(declare -f install); install "PKGS" ${HOME} ${apps_file}"
     else
         show_error_dialog "${head_error}" "${pkmsg_005}"
     fi
@@ -91,9 +101,9 @@ then
     then
         snap_file="${HOME}/${base_snap_file}"
     fi
-    if [ -f "${apps_file}" ]
+    if [ -f "${snap_file}" ]
     then
-        sudo bash -c "$(declare -f install); install ${HOME} ${snap_file}"
+        sudo bash -c "$(declare -f install); install "SNAP" ${HOME} ${snap_file}"
     else
         show_error_dialog "${head_error}" "${pkmsg_005}"
     fi
