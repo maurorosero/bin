@@ -44,7 +44,7 @@ else
 	source "${HOME}/bin/msg/head.es"
 fi
 
-# Load bootstrap messages
+# Load packages messages
 if [ -f "${HOME}/bin/msg/packages.$LANG" ]
 then
 	source "${HOME}/bin/msg/packages.$LANG"
@@ -52,7 +52,7 @@ else
 	source "${HOME}/bin/msg/packages.es"
 fi	
 
-# Verifica si Dialog está instalado
+# Check if dialog is installed
 if ! command -v dialog >/dev/null 2>&1
 then
     echo "${head_000}"
@@ -75,7 +75,12 @@ apps_title="${pkmsg_000}"
 mz_yesno "${pkmsg_003}"
 if [ "${result}" == "0" ]
 then
-    apps_file="${HOME}/bin/requirements.txt"
+    base_apps_file="requirements.bin"
+    apps_file="${HOME}/bin/lib/${base_apps_file}"
+    if [ -f "${HOME}/${base_apps_file}" ]
+    then
+        apps_file="${HOME}/${base_apps_file}"
+    fi
     if [ -f "${apps_file}" ]
     then
         sudo bash -c "$(declare -f install); install ${HOME} ${apps_file}"
