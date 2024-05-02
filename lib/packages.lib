@@ -19,6 +19,14 @@ show_progress() {
   echo "$percent" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${message}" 18 80 0
 }
 
+# Función para verificar si un paquete está instalado
+check_packages() {
+  install=0
+  if ! command -v $1 &>/dev/null; then
+    install=1
+  fi
+}
+
 get_osname() {
     if [ "$(uname)" == "Darwin" ]; then
         # En macOS, instalamos o actualizamos a través de Homebrew
@@ -65,16 +73,30 @@ install_os_packages() {
 # Función para instalar paquetes pro medio de snapd
 snap_install() {
     local pkg_name=$1
-
     if [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
         # Solo si es Ubuntu
         log=$(snap install ${pkg_name} 2>&1)
     fi
 }
 
+# Función para instalar paquetes pro medio de snapd
+python_pip_install() {
+    local pkg_name=$1
+    python3 -m pip install --upgrade pip
+    package_info=$(pip show "$pkg_name" 2>/dev/null)
+    if [ -z "$package_info" ]
+    then
+        log=$(python3 -m pip install --user ${pkg_name} 2>&1)
+    else
+        log=$(python3 -m pip install --upgrade ${pkg_name} 2>&1)
+    fi
+}
+
 # Instalar paquetes de sistema operativo
 install_packages() {
   local packages_file="$1"
+  local title="$2"
+  local apps_title="$3"
   local total_lines=$(wc -l <"${packages_file}")
   local current_line=0
 
@@ -93,9 +115,11 @@ install_packages() {
   echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
 }
 
-# Instalar paquetes de sistema operativo
+# Instalar paquetes con snap
 snap_packages() {
   local packages_file="$1"
+  local title="$2"
+  local apps_title="$3"
   local total_lines=$(wc -l <"${packages_file}")
   local current_line=0
 
@@ -114,4 +138,49 @@ snap_packages() {
   echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
 }
 
+# Instalar paquetes con python-pip
+snap_packages() {
+  local packages_file="$1"
+  local title="$2"
+  local apps_title="$3"
+  local total_lines=$(wc -l <"${packages_file}")
+  local current_line=0
+
+  while IFS= read -r line; do
+    current_line=$((current_line + 1))
+    local progress=$((current_line * 100 / total_lines))
+
+    # Instalar el paquete usando snap
+    python_pip_install ${line}
+
+    # Mostrar la barra de progreso
+    show_progress "${head_installing}: $line\n\n$log" "$progress"
+  done <"${packages_file}"
+
+  # Finalizar la barra de progreso
+  echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
+}
+
+get_os_family() {
+  os_family=$(grep "^ID_LIKE=" /etc/os-release | cut -d= -f2)
+}
+
+sops_repo_install() {
+    check_packages sops
+    if [ "${install}" == "1" ]; then
+        get_os_family
+        if [ ${os_family} == "debian" ]; then
+            SOPS_LATEST_VERSION=$(curl -s "https://api.github.com/repos/mozilla/sops/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+')
+            curl -Lo sops.deb "https://github.com/mozilla/sops/releases/latest/download/sops_${SOPS_LATEST_VERSION}_amd64.deb"
+            sudo apt --fix-broken install ./sops.deb
+            rm -rf sops.deb
+        fi
+        if [ ${os_family} == "redhat" ]; then
+            SOPS_LATEST_VERSION=$(curl -s "https://api.github.com/repos/mozilla/sops/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+')
+            curl -Lo sops.rpm "https://github.com/mozilla/sops/releases/latest/download/sops_${SOPS_LATEST_VERSION}_x86_64.rpm"
+            sudo dnf install sops.rpm
+            rm -rf sops.rpm
+        fi
+    fi
+}
 

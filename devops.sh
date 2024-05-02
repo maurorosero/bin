@@ -1,143 +1,113 @@
 #!/usr/bin/env bash
-#title           : devops.sh
-#description     : Install Ansible
-#author          : MRP/mrp - Mauro Rosero P.
-#company email   : mrosero@panamatech.net
-#personal email  : mauro@rosero.one
-#date            : 20220301
-#version         : 3.05.25
+#bash script     : devops.sh
+#apps            : MRosero Personal Developer Utilities
+#description     : Developers Packages Install
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
 #notes           :
 #==============================================================================
-# 2023/07/13 14:23 Corrección Bash LINT por ChatGPT 3.5
 #==============================================================================
 
-# Error messages
-error_header1="ANSBILE & DEVOPS PACK INSTALLATION"
-error_header2="========================================="
-error_ansible_install="Ansible Execution Version - Error "
-error_sops_install="SOPS Execution Version - Error "
-error_python_install="Python Execution Version - Error "
-error_whiptail_install="Dialog Execution Version - Error "
-error_yq_install="Yaml Query (yq) Execution Version - Error "
-error_jq_install="Json Query (jq) Execution Version - Error "
-error_sudo_install="SuDO Execution Version - Error "
-error_root_install="Become root privileges - Error "
-error_debian_install="Installing Debian/Ubuntu Packages - Error "
-error_sudoers_install="Please, install sudo, configure some user with root privileges and run with this user!"
-error_not_installed="Packages not installed: "
+install() {
+    local install_mode=$1
+	local install_home=$2
+    local install_file=$3
+		
+	# Load bootstrap messages
+	if [ -f "${install_home}/bin/msg/packages.$LANG" ]
+	then
+		source "${install_home}/bin/msg/packages.$LANG"
+	else
+		source "${install_home}/bin/msg/packages.es"
+	fi	
+	
+	# Load Installer Functions
+	source "${install_home}/bin/lib/console.lib"
 
+	# Load Installer Functions
+	source "${install_home}/bin/lib/packages.lib"
+   
+    # Execute packages with os-packager
+    if [ "${install_mode}" == "PKGS" ]
+    then
+        install_packages ${install_file} "${head_000}" "${pkmsg_000}"
+    fi
 
-### CHECK BASIC REQUIREMENTS TO RUN
-get_os_family() {
-  os_family=$(grep "^ID_LIKE=" /etc/os-release | cut -d= -f2)
+    # Execute packages with snapd
+    if [ "${install_mode}" == "PIP" ]
+    then
+        snap_packages ${install_file} "${pkmsg_000}" "${pkmsg_000}"
+    fi
 }
 
-install_packages() {
-  get_os_family
-  case ${os_family} in
-    debian)
-      INSTALLER=1
-      sudo apt install $1
-      ;;
-    redhat)
-      INSTALLER=1
-      sudo dnf install $1
-      ;;
-    *)
-      INSTALLER=0
-      ;;
-  esac
-}
+# Main.- Llamar a la función con sudo
+clear
 
-su_packages() {
-  get_os_family
-  case ${os_family} in
-    debian)
-      INSTALLER=1
-      apt install $1
-      ;;
-    redhat)
-      INSTALLER=1
-      dnf install $1
-      ;;
-    *)
-      INSTALLER=0
-      ;;
-  esac
-}
-
-check_packages() {
-  install=0
-  if ! command -v $1 &>/dev/null; then
-    install=1
-  fi
-}
-
-### MAIN DEVELOPERS STATION INSTALLATION (ANSIBLE)
-PACKAGES=""
-
-check_packages sudo
-if [ "${install}" == "1" ]; then
-   su -
-   su_packages sudo
-   usermod -aG sudo $USER
-   exit
-fi
-
-check_packages python3
-if [ "${install}" == "1" ]; then
-   PACKAGES="python3"
-fi
-
-check_packages jq
-if [ "${install}" == "1" ]; then
-   PACKAGES="$PACKAGES jq"
-fi
-
-check_packages yq
-if [ "${install}" == "1" ]; then
-   PACKAGES="$PACKAGES yq"
-fi
-
-check_packages wget
-if [ "${install}" == "1" ]; then
-   PACKAGES="$PACKAGES wget"
-fi
-
-check_packages git
-if [ "${install}" == "1" ]; then
-   PACKAGES="$PACKAGES git"
-fi
-
-check_packages curl
-if [ "${install}" == "1" ]; then
-   PACKAGES="$PACKAGES curl"
-fi
-
-if [ "$PACKAGES" != "" ]; then
-   install_packages ${PACKAGES}
-fi
-
-check_packages sops
-if [ "${install}" == "1" ]; then
-  get_os_family
-  if [ ${os_family} == "debian" ]; then
-     SOPS_LATEST_VERSION=$(curl -s "https://api.github.com/repos/mozilla/sops/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+')
-     curl -Lo sops.deb "https://github.com/mozilla/sops/releases/latest/download/sops_${SOPS_LATEST_VERSION}_amd64.deb"
-     sudo apt --fix-broken install ./sops.deb
-     rm -rf sops.deb
-  fi
-  if [ ${os_family} == "redhat" ]; then
-     SOPS_LATEST_VERSION=$(curl -s "https://api.github.com/repos/mozilla/sops/releases/latest" | grep -Po '"tag_name": "v\K[0-9.]+')
-     curl -Lo sops.rpm "https://github.com/mozilla/sops/releases/latest/download/sops_${SOPS_LATEST_VERSION}_x86_64.rpm"
-     sudo dnf install sops.rpm
-     rm -rf sops.rpm
-  fi
-fi
-
-check_packages ansible
-if [ "${install}" == "1" ]; then
-   python3 -m pip install --user ansible paramiko pyGithub whiptail-dialogs
+# Load head messages
+if [ -f "${HOME}/bin/msg/head.$LANG" ]
+then
+	source "${HOME}/bin/msg/head.$LANG"
 else
-   python3 -m pip install --upgrade ansible paramiko pyGithub whiptail-dialogs
+	source "${HOME}/bin/msg/head.es"
+fi
+
+# Load packages messages
+if [ -f "${HOME}/bin/msg/packages.$LANG" ]
+then
+	source "${HOME}/bin/msg/packages.$LANG"
+else
+	source "${HOME}/bin/msg/packages.es"
+fi	
+
+# Check if dialog is installed
+if ! command -v dialog >/dev/null 2>&1
+then
+    echo "${head_000}"
+    echo "------------------------------------------------------------------------------"
+    echo >&2 "${head_001}"
+    exit 1
+fi
+
+# Load Installer Functions
+source "${HOME}/bin/lib/console.lib"
+get_osname
+if [ "${os_name}" == "${head_unknow}"]
+then
+    show_error_dialog "${head_error}" "${pkmsg_004}"
+    exit 2
+fi
+
+mz_yesno "${pkmsg_003}" "${head_000}" "${pkmsg_000}"
+if [ "${result}" == "0" ]
+then
+    base_apps_file="devops.bin"
+    apps_file="${HOME}/bin/lib/${base_apps_file}"
+    if [ -f "${HOME}/${base_apps_file}" ]
+    then
+        apps_file="${HOME}/${base_apps_file}"
+    fi
+    if [ -f "${apps_file}" ]
+    then
+        sudo bash -c "$(declare -f install); install "PKGS" ${HOME} ${apps_file}"
+    else
+        show_error_dialog "${head_error}" "${pkmsg_005}"
+    fi
+
+    base_python_file="python.bin"
+    python_file="${HOME}/bin/lib/${base_python_file}"
+    if [ -f "${HOME}/${base_python_file}" ]
+    then
+        python_file="${HOME}/${base_python_file}"
+    fi
+    if [ -f "${python_file}" ]
+    then
+        bash -c "$(declare -f install); install "PIP" ${HOME} ${python_file}"
+    else
+        show_error_dialog "${head_error}" "${pkmsg_005}"
+    fi
+else
+     show_error_dialog "${head_info}" "${pkmsg_006}"
 fi
