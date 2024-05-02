@@ -35,23 +35,29 @@ install() {
 
 	install_or_update_python() {
 		echo "${pymsg_001}"
+		package_list_1="python3 git curl wget zip"
+		package_list_2="python git curl wget zip"
 		if [ "$(uname)" == "Darwin" ]; then
 			# En macOS, instalamos o actualizamos Python a través de Homebrew
 			/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-			brew install python git curl wget sops gzip
+			echo "Instalando ${package_list_2}..."
+			brew install ${package_list_2}
 		elif [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
 			# En sistemas Debian y derivados, instalamos o actualizamos Python a través de apt
-			apt update
-			apt install -y python3 git curl wget sops gzip
+			echo "Instalando ${package_list_1}..."
+			apt install -y ${package_list_1}
 		elif [ -f /etc/redhat-release ]; then
 			# En sistemas Red Hat, instalamos o actualizamos Python a través de yum
-			yum install -y python3 git curl wget sops gzip
+			echo "Instalando ${package_list_1}..."
+			yum install -y ${package_list_1}
 		elif [ -f /etc/arch-release ]; then
 			# En Arch Linux, instalamos o actualizamos Python a través de pacman
-			pacman -Sy --noconfirm python git curl wget sops gzip
+			echo "Instalando ${package_list_2}..."
+			pacman -Sy --noconfirm ${package_list_2}
 		elif [ -f /etc/rc.conf ]; then
 			# En BSD, instalamos o actualizamos Python a través de pkg
-			pkg install -y python3 git curl wget sops gzip
+			echo "Instalando ${package_list_1}..."
+			pkg install -y ${package_list_1}
 		else
 			echo "${pymsg_002}"
 			exit 1
