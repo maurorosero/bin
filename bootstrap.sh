@@ -35,8 +35,8 @@ install() {
 
 	install_or_update_python() {
 		echo "${pymsg_001}"
-		package_list_1="python3 git curl wget zip"
-		package_list_2="python git curl wget zip"
+		package_list_1="python3 git curl wget zip dialog gettext"
+		package_list_2="python git curl wget zip dialog gettext"
 		if [ "$(uname)" == "Darwin" ]; then
 			# En macOS, instalamos o actualizamos Python a través de Homebrew
 			/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
