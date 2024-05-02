@@ -70,9 +70,7 @@ then
     exit 2
 fi
 
-title="${head_000}"
-apps_title="${pkmsg_000}"
-mz_yesno "${pkmsg_003}"
+mz_yesno "${pkmsg_003}" "${head_000}" "${pkmsg_000}"
 if [ "${result}" == "0" ]
 then
     base_apps_file="requirements.bin"
@@ -84,6 +82,18 @@ then
     if [ -f "${apps_file}" ]
     then
         sudo bash -c "$(declare -f install); install ${HOME} ${apps_file}"
+    else
+        show_error_dialog "${head_error}" "${pkmsg_005}"
+    fi
+    base_snap_file="snap.bin"
+    snap_file="${HOME}/bin/lib/${base_snap_file}"
+    if [ -f "${HOME}/${base_snap_file}" ]
+    then
+        snap_file="${HOME}/${base_snap_file}"
+    fi
+    if [ -f "${apps_file}" ]
+    then
+        sudo bash -c "$(declare -f install); install ${HOME} ${snap_file}"
     else
         show_error_dialog "${head_error}" "${pkmsg_005}"
     fi

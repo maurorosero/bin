@@ -40,8 +40,7 @@ get_osname() {
     fi
 }
 
-
-# Función para instalar o actualizar Python a la última versión
+# Función para instalar paquetes por instalador del OS
 install_os_packages() {
     local pkg_name=$1
 
@@ -63,6 +62,16 @@ install_os_packages() {
     fi
 }
 
+# Función para instalar paquetes pro medio de snapd
+snap_install() {
+    local pkg_name=$1
+
+    if [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
+        # Solo si es Ubuntu
+        log=$(snap install ${pkg_name} 2>&1)
+    fi
+}
+
 # Instalar paquetes de sistema operativo
 install_packages() {
   local packages_file="$1"
@@ -73,8 +82,29 @@ install_packages() {
     current_line=$((current_line + 1))
     local progress=$((current_line * 100 / total_lines))
 
-    # Instalar la colección utilizando ansible-galaxy
+    # Instalar la colección utilizando os-packager
     install_os_packages ${line}
+
+    # Mostrar la barra de progreso
+    show_progress "${head_installing}: $line\n\n$log" "$progress"
+  done <"${packages_file}"
+
+  # Finalizar la barra de progreso
+  echo "100" | dialog --backtitle "${title}" --title "${apps_title}" --gauge "${pkmsg_end}" 6 80 0
+}
+
+# Instalar paquetes de sistema operativo
+snap_packages() {
+  local packages_file="$1"
+  local total_lines=$(wc -l <"${packages_file}")
+  local current_line=0
+
+  while IFS= read -r line; do
+    current_line=$((current_line + 1))
+    local progress=$((current_line * 100 / total_lines))
+
+    # Instalar el paquete usando snap
+    snap_install ${line}
 
     # Mostrar la barra de progreso
     show_progress "${head_installing}: $line\n\n$log" "$progress"

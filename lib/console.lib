@@ -14,6 +14,8 @@
 ### Yes/No Input
 mz_yesno() {
   local label=$1
+  local title=$2
+  local apps_title=$3
   dialog --keep-window --begin  4 2 --colors --no-shadow --backtitle "${title}" --title "${apps_title}" --yesno "\n${label}" 6 80
   result=$?
 }
