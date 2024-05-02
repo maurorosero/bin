@@ -16,9 +16,14 @@ Para esto he diseñado dos (2) formas de uso o despliegue del mismo:
 
 ### Usuario
 
-Desde este enlace, descargue el archivo [/tmp/install_bin.sh](scripts/install_bin.sh) y realice los siguietes pasos:
+Desde este enlace, descargue el archivo [install_bin.sh](scripts/install_bin.sh). Regularmente o en mi caso va a la carpeta de descargas.
 
-    $ cd $HOME
+Si esto es así (carpeta de descargas), muevalo a la carpeta /tmp:
+
+    $ mv $HOME/Descargas/install_bin.sh /tmp
+
+y realice los siguietes pasos:
+
     $ chmod a+x /tmp/install_bin.sh
     $ /tmp/install_bin.sh
     $ rm /tmp/install_bin.sh
