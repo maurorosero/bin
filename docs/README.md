@@ -8,7 +8,7 @@ A pesar de que es un proyecto privado, alguno de mis colaboradores y amigos me h
 
 ## Modos de Funcionamiento
 
-Para esto he diseñado dos (2) formas de uso o despliegue del mismo:
+Existen dos (2) formas de despliegue de uso:
   * Usuario: Se instala mediante este sitio y con las herramientas no sensibles y de uso general
   * Devops: Se requiere un token o acceso ssh al proyecto dado por mí a mis colaboradores de **PANAMATECH ONLINE** u otros colaboradores de programación.
 
@@ -31,6 +31,8 @@ y realice los siguietes pasos:
 En este punto, se debe haber creado la **carpeta bin** dentro de la **carpeta HOME** de su usuario.
 
 ### Devops
+
+Información reservada solo para colaboradores de **PANAMATECH ONLINE** u otros colaboradores de programación.
 
 ## Plataformas de Uso
 
