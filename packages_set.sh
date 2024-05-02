@@ -27,7 +27,7 @@ install() {
 	source "${install_home}/bin/lib/console.lib"
 
 	# Load Installer Functions
-	source "${install_home}/bin/lib/packager.lib"
+	source "${install_home}/bin/lib/packages.lib"
    
     # Execute packages installation function
     install_packages ${install_file}
