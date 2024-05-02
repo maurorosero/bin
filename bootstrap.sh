@@ -107,8 +107,7 @@ install() {
 	then
 		bin_download "${bin_token}" "${bin_owner}" "${bin_repo}" "${download_path}"
 		echo "Paquete bin fue descargado en ${DOWNLOAD_FILE}"
-		cd $HOME
-		unzip ${DOWNLOAD_FILE}
+		unzip -qu ${DOWNLOAD_FILE} -d ${bin_home}
 		echo "Paquete bin ${DOWNLOAD_FILE} fue instaldo!"
 		rm -f ${DOWNLOAD_FILE}
 		echo -e "\n====================================================="
