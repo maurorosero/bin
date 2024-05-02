@@ -28,7 +28,11 @@ y realice los siguietes pasos:
     $ /tmp/install_bin.sh
     $ rm /tmp/install_bin.sh
 
-En este punto, se debe haber creado la **carpeta bin** dentro de la **carpeta HOME** de su usuario.
+o directamente desde la consola, **ejecute esto**:
+
+    $ wget -O - https://maurorosero.github.io/bin/scripts/install_bin.sh | bash
+
+En este punto, le va a pedir su cpntraseña y si es correcta iniciará el proceso de instalación directamente. Una vez terminado, se debe haber creado la **carpeta bin** dentro de la **carpeta HOME** de su usuario.
 
 ### Devops
 
