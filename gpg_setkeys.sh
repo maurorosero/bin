@@ -545,11 +545,17 @@ uid_managment() {
 
 set_global_git() {
     clear
+    local db_file="${HOME}/${DB_PATH}/${DB_USER}"
     local gpg_sign=$(git config --global commit.gpgSign)
     if [[ "${gpg_sign}" == "true" ]]
     then
-        local signing_key=$(git config --global user.signingkey)
-        msg_gpg_git="${gtmsg_011_1} ${signing_key}. ${gtmsg_011_2}"
+        local signing_key="$(git config --global user.signingkey)"
+        if [ -z "${signing_key}"  ]
+        then
+            msg_gpg_git="${gtmsg_012}"
+        else
+            msg_gpg_git="${gtmsg_011_1} ${signing_key}. ${gtmsg_011_2}"
+        fi
     else
         msg_gpg_git="${gtmsg_012}"
     fi
@@ -593,7 +599,7 @@ set_global_git() {
         mz_yesno "${msg_git_configure}"
         case ${result} in
             0)
-            selected_git_sign=$(select_sign_subkey "\n${gtmsg_006}" "${fingerprint}" "${fullname} (${email})" 105)
+            selected_git_sign=$(select_git_subkey "${gtmsg_016_1} ${gtmsg_016_2} ${fullname} (${email}) ${gtmsg_016_3}" "${fingerprint}" "${fullname} (${email})" 90 "${db_file}")
             rc_selected_git=$?
             case ${rc_selected_git} in
                 0)

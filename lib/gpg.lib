@@ -14,6 +14,7 @@
 # Global Default Variables
 BINLIB_PATH=bin/lib
 GPG_SUBKEY_ID=""
+DB_GPG_SUBKEYS_KEY="subkey_id"
 DB_GPG_SUBKEYS="GPG_SUBKEYS"
 DF_GPG_SUBKEYS="${DB_GPG_SUBKEYS,,}.sql"
 REVOKE_FILES="*.rev"
@@ -232,6 +233,21 @@ get_gpg_signs_subkeys() {
     echo "$(gpg --list-secret-keys --with-colons --keyid-format=long "${mkey}" | awk -F: '$1 == "ssb" { subkey = $5; usage = $12 } $1 == "fpr" && subkey && usage ~ /s/ { print subkey "|" $10 ":"; usage = "" }')${description}"
 }
 
+# Función para obtener el fingerprint de un masterkey id dado
+get_fp_masterkey() {
+    local mkey="$1"
+
+    # Verifica si se ha proporcionado una clave maestra como argumento
+    if [[ -z "${mkey}" ]]
+    then
+        return 1
+    fi
+
+    # Obtener el fingerprint de la clave maestra
+    fingerprint=$(gpg --list-keys --with-colons --keyid-format=long --fingerprint "${mkey}" | awk -F: '$1 == "fpr" { print $10; exit }')
+    echo "${fingerprint}"
+}
+
 # Función para mostrar el menú de selección de llaves maestras
 select_master_key() {
     local head_menu="$1"
@@ -289,31 +305,47 @@ select_uid_fp_key() {
 }
 
 # Función para mostrar el menú de selección de las llaves de firma para una clave maestra
-select_sign_subkey() {
-    local head_menu="$1"
+select_git_subkey() {
     local mkey="$2"
     local reference="$3"
     local keys=$(get_gpg_signs_subkeys "${mkey}" "${reference}")
     local options=()
     local width="${4:-$CWIDTH}"
+    local db_file="$5"
     local elements=4
+    local mkey_fingerprint=$(get_fp_masterkey "${mkey}")
+    local head_menu="$1 ${mkey_fingerprint}/${mkey}"
+    local query=""
+    local select_num=0
 
     while IFS= read -r line
     do
-        description=$(echo "$line" | cut -d':' -f2)
-        key=$(echo "$line" | cut -d':' -f1)
-        options+=("${key}" "${description}")
-        (( elements++ ))
+        description=$(echo "${line}" | cut -d':' -f2)
+        key=$(echo "${line}" | cut -d':' -f1)
+        fp_subkey=$(echo "${key}" | cut -d'|' -f2)
+        query="SELECT description FROM ${DB_GPG_SUBKEYS} WHERE MASTER_ID = '${mkey_fingerprint}' AND SUBKEY_ID = '${fp_subkey}' AND SUBKEY_TYPE = 1;"
+        sign_description=$(db_sql_execute_with_result "${db_file}" "${query}")
+        if [[ -n "${sign_description}" ]]
+        then
+            select_num=1
+            options+=("${key}" "${sign_description}")
+            (( elements++ ))
+        fi
     done <<< "$keys"
 
-    local rows=$(expr ${CROWS} + ${elements})
-    choice=$(dialog --clear --begin ${CY} ${CX} \
-                    --backtitle "${title}" \
-                    --title "${apps_title}" \
-                    --menu "${head_menu}" \
-                    ${rows} ${width} ${elements} \
-                    "${options[@]}" \
-                    2>&1 >/dev/tty)
+    if [[ ${select_num} -gt 0 ]]
+    then
+        local rows=$(expr ${CROWS} + ${elements})
+        choice=$(dialog --clear --begin ${CY} ${CX} \
+                        --backtitle "${title}" \
+                        --title "${apps_title}" \
+                        --menu "${head_menu}" \
+                        ${rows} ${width} ${elements} \
+                        "${options[@]}" \
+                        2>&1 >/dev/tty)
+    else
+        choice=""
+    fi
 
     echo "${choice}"
 }

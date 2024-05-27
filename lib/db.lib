@@ -127,6 +127,37 @@ db_sql_execute() {
     fi
 }
 
+db_sql_execute_with_result() {
+    # Verificar si se proporcionaron los parámetros esperados
+    if [ "$#" -ne 2 ]; then
+        return 255
+    fi
+
+    # Asignar parámetros a variables locales
+    local sqldb="$1"
+    local sql="$2"
+    local data=""
+
+    # Verificar si el archivo de la base de datos existe
+    if [ ! -f "$sqldb" ]; then
+        return 254
+    fi
+
+    # Ejecutar la consulta SQL
+    check_sqlite_installed
+    rc_sqlite=$?
+    if [ ${rc_sqlite} -eq 0 ]
+    then
+        data=$(sqlite "${sqldb}" "${sql}")
+        echo "${data}"
+        return $?
+    else
+        data=$(sqlite3 "${sqldb}" "${sql}")
+        echo "${data}"
+        return $?
+    fi
+}
+
 db_record_exists() {
     local db_file="$1"
     local db_table="$2"
