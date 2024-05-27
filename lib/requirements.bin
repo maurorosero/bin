@@ -8,10 +8,10 @@ lsof
 mutt
 net-tools
 nmap
+paperkey
 pipx
 python3-pip
 python3-gitlab
-remina
-sops
+remmina
 terminator
 wireshark

@@ -27,31 +27,6 @@ check_packages() {
   fi
 }
 
-get_osname() {
-    if [ "$(uname)" == "Darwin" ]; then
-        # En macOS, instalamos o actualizamos a través de Homebrew
-        os_name=$(sw_vers -productVersion | awk -F '.' '{print "macOS " $1 "." $2}')
-    elif [ -f /etc/debian_version ] || [ -f /etc/os-release ]; then
-        # En sistemas Debian y derivados, instalamos o actualizamos a través de apt
-        os_name=$(grep "^ID_LIKE=" /etc/os-release | cut -d= -f2)
-        if grep -qi "${head_ubuntu}" /etc/os-release
-        then
-            os_name="${head_ubuntu}"
-        fi
-    elif [ -f /etc/redhat-release ]; then
-        # En sistemas Red Hat, instalamos o actualizamos a través de dnf
-        os_name=$(awk '{print $1}' /etc/redhat-release)
-    elif [ -f /etc/arch-release ]; then
-        # En Arch Linux, instalamos o actualizamos a través de pacman
-        os_name=$(grep '^NAME=' /etc/os-release | awk -F '"' '{print $2}')
-    elif [ -f /etc/rc.conf ]; then
-        # En BSD, instalamos o actualizamos a través de pkg
-        os_name=$(awk '{print $2}' /etc/version | awk -F '-' '{print $1}')
-    else
-        os_name="${head_unknow}"
-    fi
-}
-
 # Función para instalar paquetes por instalador del OS
 install_os_packages() {
     local pkg_name=$1

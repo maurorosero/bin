@@ -1,0 +1,301 @@
+#!/usr/bin/env bash
+#bash script     : db.lib
+#apps            : MRosero Personal Developer Utilities
+#description     : SQLite3 CRUD Library
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+# Global Default Variables
+DB_LOADED=1
+DB_PATH=bin/db
+DB_USER=${USER}.db
+
+# Para verificar si sqlite est{a instalado
+check_sqlite_installed() {
+    # Verificar si SQLite está instalado
+    if [[ $(cat /etc/os-release | grep -Ei "debian|ubuntu") ]]
+    then
+        if command -v sqlite3 &> /dev/null
+        then
+            return 1
+        else
+            return 255
+        fi
+    else
+        if command -v sqlite &> /dev/null
+        then
+            return 0
+        else
+            return 255
+        fi
+    fi
+}
+
+# Función para crear la base de datos y la tabla a partir de un archivo de definición SQL
+db_create() {
+    local db_path="$1"
+    local db_file="$2"
+    local df_sqlf="$3"
+
+    # Verificar si la base de datos ya existe
+    if [ ! -d "${db_path}" ]
+    then
+        mkdir -p "${db_path}"
+        if [ $? -ne 0 ]
+        then
+            return 252
+        fi
+    fi
+
+    # Verificar si el archivo de definición SQL existe
+    if [ ! -f "${df_sqlf}" ]
+    then
+        return 250
+    fi
+
+    # Ejecutar el archivo de definición SQL para crear la tabla
+    # alias sqlite='sqlite3'
+    check_sqlite_installed
+    if [ $? -eq 0 ]
+    then
+        sqlite "${db_path}/${db_file}" < "${df_sqlf}"
+        return $?
+    else
+        sqlite3 "${db_path}/${db_file}" < "${df_sqlf}"
+        return $?
+    fi
+}
+
+# Función para verificar si una tabla ha sido definida
+# Parámetros:
+# $1: Archivo de la base de datos SQLite
+# $2: Nombre de la tabla
+# Ejemplo de Uso:
+# db_table_exists "my_database.db" "MI_TABLA"
+
+db_table_exists() {
+    local db="$1"
+    local table="$2"
+
+    check_sqlite_installed
+    if [ $? -eq 0 ]
+    then
+        sqlite "${db}" ".tables" | grep -q "\<${table}\>"
+    else
+        sqlite3 "${db}" ".tables" | grep -q "\<${table}\>"
+    fi
+}
+
+# Función genérica para ejecutar un comando SQL dinámico en una base de datos SQLite
+# Parámetros:
+# $1: Archivo de la base de datos SQLite
+# $2: Comando SQL (string)
+# Ejemplo de Uso:
+# db_sql_execute "my_database.db" "SELECT * FROM MI_TABLA WHERE ID='VALOR';"
+
+db_sql_execute() {
+    # Verificar si se proporcionaron los parámetros esperados
+    if [ "$#" -ne 2 ]; then
+        return 255
+    fi
+
+    # Asignar parámetros a variables locales
+    local sqldb="$1"
+    local sql="$2"
+
+    # Verificar si el archivo de la base de datos existe
+    if [ ! -f "$sqldb" ]; then
+        return 254
+    fi
+
+    # Ejecutar la consulta SQL
+    check_sqlite_installed
+    rc_sqlite=$?
+    if [ ${rc_sqlite} -eq 0 ]
+    then
+        sqlite "${sqldb}" "${sql}"
+        return $?
+    else
+        sqlite3 "${sqldb}" "${sql}"
+        return $?
+    fi
+}
+
+db_record_exists() {
+    local db_file="$1"
+    local db_table="$2"
+    local db_table_key="$3"
+    local db_key="$2"
+
+    # Construir el query sql para verificación
+    local query="SELECT count(*) FROM ${db_table} WHERE ${db_table_key} = \'${db_key}\';"
+
+    # Ejecutar query
+    local sql_result=$(db_sql_execute "${db_file}" "${query}")
+    rc_sql=$?
+    case ${rc_sql} in
+        0)
+        if [ "${sql_result}" == "0" ]
+        then
+            return 101
+        else
+            return 0
+        fi
+        ;;
+        *)
+        return ${rc_sql}
+        ::
+    esac
+}
+
+# Función genérica para insertar o actualizar un registro en una base de datos SQLite
+# Parámetros:
+# $1: Archivo de la base de datos SQLite
+# $2: Nombre de la tabla
+# $3: Nombre del campo de la clave primaria
+# $4...: Lista de campos y valores en formato "campo=valor"
+# Ejemplo de uso
+# La lista de campos y valores se pasa como argumentos en formato "campo=valor"
+# Los campos que se desean excluir en el update deben ser precedidos por un signo de exclamación "!"
+# insert_or_update "mi_base_de_datos.db" "mi_tabla" "id" "id=1" "nombre='Juan'" "edad=30" "email='juan@example.com'" "!created_date=$(date '+%Y-%m-%d %H:%M:%S')" "!created_by='admin'"
+
+db_insert_or_update() {
+    local db_file="$1"
+    local table_name="$2"
+    local primary_key="$3"
+    shift 3
+    local params=("$@")
+
+    # Verificar si el archivo de la base de datos existe
+    [ -f "$db_file" ] || { return 254; }
+
+    local fields=""
+    local values=""
+    local update=""
+    local primary_key_value=""
+
+    for param in "${params[@]}"; do
+        IFS='=' read -r field value <<< "${param}"
+        # Escapar comillas simples en los valores
+        value=$(printf '%s' "${value}" | sed "s/'/''/g")
+
+        if [[ "$field" == "!"* ]]
+        then
+            # No incluir en la sentencia UPDATE
+            field="${field#!}"
+            fields="${fields}, ${field}"
+            values="${values}, '${value}'"
+        else
+            fields="${fields}, ${field}"
+            values="${values}, '${value}'"
+            update="${update} ${field}=excluded.${field},"
+        fi
+
+        [ "${field}" == "${primary_key}" ] && primary_key_value="${value}"
+    done
+
+    # Asegurarse de que se ha proporcionado el valor de la clave primaria
+    [ -z "$primary_key_value" ] && { return 253; }
+
+    fields="${fields:2}"  # Eliminar la primera coma y espacio
+    values="${values:2}"  # Eliminar la primera coma y espacio
+    update="${update%,}"   # Eliminar la última coma
+
+  local query="BEGIN;
+    INSERT INTO ${table_name} (${fields})
+    VALUES (${values})
+    ON CONFLICT(${primary_key}) DO UPDATE SET ${update};
+    COMMIT;"
+
+    # Ejecutar query
+    db_sql_execute "${db_file}" "${query}"
+    rc_sql=$?
+    echo -e "${sql}"
+    return ${rc_sql}
+}
+
+# Función genérica para exportar tablas en formato SQL de una base de datos SQLite
+# Parámetros:
+# $1: Archivo de la base de datos SQLite
+# $2: Archivo dump SQL resultante
+# $3...: Lista de tablas a exportar
+# Ejemplo de Uso:
+# db_export_tables "my_database.db" "output.sql" "table1" "table2"
+# To export all tables, use:
+# db_export_tables "my_database.db" "output.sql"
+
+db_export_tables() {
+    local db_path=$1
+    local output_file=$2
+    shift 2
+    local tables=("$@")
+
+    # If no tables are provided, get all table names
+    rc_tables=0
+    if [ ${#tables[@]} -eq 0 ]
+    then
+        check_sqlite_installed
+        if [ $? -eq 0 ]
+        then
+            tables=($(sqlite "$db_path" "SELECT name FROM sqlite_master WHERE type='table';"))
+            rc_tables=$?
+        else
+            tables=($(sqlite3 "$db_path" "SELECT name FROM sqlite_master WHERE type='table';"))
+            rc_tables=$?
+        fi
+    fi
+
+    > "${output_file}"  # Clear the output file
+
+    if [ ${rc_tables} -ne 0 ]
+    then
+        return ${rc_tables}
+    fi
+
+    for table in "${tables[@]}"
+    do
+        # Export the CREATE TABLE statement
+        check_sqlite_installed
+        if [ $? -eq 0 ]
+        then
+            create_table_sql=$(sqlite "${db_path}" "SELECT sql FROM sqlite_master WHERE type='table' AND name='${table}';")
+            rc_tables=$?
+        else
+            create_table_sql=$(sqlite3 "${db_path}" "SELECT sql FROM sqlite_master WHERE type='table' AND name='${table}';")
+            rc_tables=$?
+        fi
+
+        # Set sql to output file
+        echo "${create_table_sql};" >> "${output_file}"
+
+        if [ ${rc_tables} -ne 0 ]
+        then
+            return ${rc_tables}
+        fi
+
+        # Export the data as INSERT statements
+        rc_export=0
+        check_sqlite_installed
+        if [ $? -eq 0 ]
+        then
+            sqlite "${db_path}" -cmd ".headers on" -cmd ".mode insert ${table}" "SELECT * FROM ${table};" >> "${output_file}"
+            rc_export=$?
+        else
+            sqlite3 "${db_path}" -cmd ".headers on" -cmd ".mode insert ${table}" "SELECT * FROM ${table};" >> "${output_file}"
+            rc_export=$?
+        fi
+
+        if [ ${rc_export} -ne 0 ]
+        then
+            return ${rc_export}
+        fi
+
+        echo "" >> "${output_file}"  # Add a newline for readability
+    done
+}

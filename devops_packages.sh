@@ -15,6 +15,9 @@ install() {
     local install_home=$1
     local install_file=$2
 
+    # Load dialog console library
+    source "${HOME}/bin/lib/messages.lib"
+
     # Load Installer Functions
     source "${install_home}/bin/lib/console.lib"
 
@@ -35,6 +38,9 @@ install() {
 
 # Main.- Llamar a la función con sudo
 clear
+
+# Load dialog console library
+source "${HOME}/bin/lib/messages.lib"
 
 # Load dialog console library
 source "${HOME}/bin/lib/console.lib"
@@ -86,6 +92,10 @@ then
                 echo "${value}" | sudo -S bash -c "$(declare -f install); install ${HOME} ${apps_file}"
                 if [ "$?" == "0" ]
                 then
+                    # Create developers path in $HOME
+                    if [ ! -d ${HOME}/${path_developers} ]
+                        mkdir ${HOME}/${path_developers}
+                    fi
                     read key
                     clear
                 else

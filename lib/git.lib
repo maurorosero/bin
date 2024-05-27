@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+#bash script     : git.lib
+#apps            : MRosero Personal Developer Utilities
+#description     : Git functions
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+# Global Default Variables
+GIT_LOADED=1
+
+# Función para configurar la identificación de usuario en Git
+set_global_git_identity() {
+    local fullname="$1"
+    local email="$2"
+
+    if [[ -z "${fullname}" || -z "${email}" ]]
+    then
+        return 1
+    fi
+
+    git config --global user.name "${fullname}"
+    [[ $? -ne 0 ]] && return 2
+
+    git config --global user.email "${email}"
+    [[ $? -ne 0 ]] && return 3
+
+    # Get git config identity
+    d_fullname=$(git config --global --get user.name)
+    d_email=$(git config --global --get user.email)
+
+    if [[ -z "${d_fullname}" || -z "${d_email}" ]]
+    then
+        return 4
+    fi
+    echo "${d_fullname} (${d_email})"
+}
+
+# Función para configurar la firma gpg para git
+set_global_git_gpg() {
+    local gpg_fingerprint="$1"
+
+    if [[ -z "${gpg_fingerprint}" ]]
+    then
+        return 1
+    fi
+
+    # Configura Git para usar la clave GPG
+    git config --global user.signingkey "${gpg_fingerprint}"
+    local rc_git_gpg=$?
+    [[ ${rc_git_gpg} -ne 0 ]] && return ${rc_git_gpg}
+
+    # Configura Git para firmar todos los commits automáticamente (opcional)
+    git config --global commit.gpgSign true
+    rc_git_gpg=$?
+    [[ ${rc_git_gpg} -ne 0 ]] && return ${rc_git_gpg}
+
+    # Configura Git para firmar todas las etiquetas automáticamente
+    git config --global tag.forceSignAnnotated true
+    rc_git_gpg=$?
+    [[ ${rc_git_gpg} -ne 0 ]] && return ${rc_git_gpg}
+
+    return 0
+}

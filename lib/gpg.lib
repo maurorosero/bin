@@ -1,0 +1,508 @@
+#!/usr/bin/env bash
+#bash script     : gpg.lib
+#apps            : MRosero Personal Developer Utilities
+#description     : GPG & SOPS Library
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+# Global Default Variables
+BINLIB_PATH=bin/lib
+GPG_SUBKEY_ID=""
+DB_GPG_SUBKEYS="GPG_SUBKEYS"
+DF_GPG_SUBKEYS="${DB_GPG_SUBKEYS,,}.sql"
+REVOKE_FILES="*.rev"
+
+# Check lib dependencies
+[ ! -v "${MA_LOADED}" ] && source "${HOME}/${BINLIB_PATH}/messages.lib"
+[ ! -v "${DB_LOADED}" ] && source "${HOME}/${BINLIB_PATH}/db.lib"
+
+# Generar una clave GPG de seguridad (uso: C)
+gpg_create_masterkey() {
+    local email="$2 ($3) <$1>"
+    local passphrase="$4"
+    local duration=$5
+    local mode="$6"
+
+    clear
+    echo "${pgmsg_000} $7"
+    echo "-------------------------------------------------------------------------------------"
+    eval "gpg --batch --passphrase '$(echo "$passphrase")' --yes --quick-generate-key '${email}' rsa4096 '${mode}' none"
+    rc_return=$?
+    read -p "${head_pause}"
+    return ${rc_return}
+}
+
+# Generar subclave para firma GPG
+gpg_create_subkey() {
+    local masterkey="$1"
+    local use_type=$2
+    local reference="$3"
+    local duration="$4"
+    local visibility=$5
+    local passphrase="$6"
+    local subkey_type=$7
+    local db_file="$8"
+    local task_title="${9:-$pgmsg_999}"
+
+    clear
+    echo "${pgmsg_000} ${task_title}"
+    echo "-------------------------------------------------------------------------------------"
+
+
+    # Verificar que las variables requeridas estén definidas
+    if [[ -z "$subkey_type" || -z "$duration" || -z "$passphrase" || -z "$masterkey" ]]
+    then
+        return 245
+    fi
+
+    # Ejecuta los comandos de GPG para generar la subclave
+    skey_output=$(echo -e "addkey\n${subkey_type}\n4096\n${duration}\nsave\n" | \
+    gpg --command-fd=0 --status-fd=1 --pinentry-mode=loopback \
+        --passphrase "${passphrase}" --yes --edit-key "${masterkey}" 2>&1)
+    rc_return=$?
+    if [ ${rc_return} -ne 0 ]
+    then
+        echo -e "${skey_output}\n${head_fail} ${rc_return}"
+        read -p "${head_pause}"
+        return ${rc_return}
+    fi
+
+    # Extrae el ID de la subclave creada del resultado
+    local subkey_id=$(echo "${skey_output}" | grep -oE "KEY_CREATED S [A-F0-9]+")
+
+    # Verifica si se obtuvo correctamente el ID de la subclave
+    if [ -z "${subkey_id}" ]
+    then
+        echo -e "${skey_output}\n${head_gpg_subkey_none}"
+        read -p "${head_pause}"
+        return 100
+    fi
+
+    # Elimina el prefijo "KEY_CREATED S " del ID de la subclave
+    GPG_SUBKEY_ID=$(echo "${subkey_id}" | cut -d' ' -f3)
+    echo "${head_gpg_subkey_id} ${GPG_SUBKEY_ID}"
+
+    # Crea el registro de base de dato de referencia de subclave gpg
+    local db_today=$(date '+%Y-%m-%d %H:%M:%S')
+    db_insert_or_update "${db_file}" "${DB_GPG_SUBKEYS}" "subkey_id" "subkey_id=${GPG_SUBKEY_ID}" "master_id=${masterkey}" "subkey_type=${use_type}" "description=${reference}" "visibility=${visibility}" "!created_by=${USER}" "modified_by=${USER}" "!created_date=${db_today}" "modified_date=${db_today}"
+    case ${rc_return} in
+        254)
+        echo "${head_gpg_no_dbfile} ${db_file}"
+        ;;
+        253)
+        echo "${head_gpg_no_pkey} ${GPG_SUBKEY_ID}"
+        ;;
+        *)
+        echo "${head_gpg_reference} ${rc_return}"
+        ;;
+    esac
+
+    read -p "${head_pause}"
+    return ${rc_return}
+}
+
+# Crear uids para clave gpg maestra
+gpg_create_uid() {
+    local masterkey="$1"
+    local fullname="$2"
+    local email="$3"
+    local comment="$4"
+    local passphrase="$5"
+
+    clear
+    echo "${pgmsg_000} ${pgmsg_400}"
+    echo "-------------------------------------------------------------------------------------"
+
+    # Verificar que las variables requeridas estén definidas
+    if [[ -z "${fullname}" || -z "${email}" || -z "${comment}" || -z "${passphrase}" || -z "$masterkey" ]]
+    then
+        return 245
+    fi
+
+    # Ejecuta los comandos de GPG para generar la identidad (uid)
+    uid_output=$(echo -e "adduid\n${fullname}\n${email}\n${comment}\nsave\n" | \
+    gpg --command-fd=0 --status-fd=1 --pinentry-mode=loopback \
+        --batch --yes --passphrase "${passphrase}" \
+        --edit-key "${masterkey}" 2>&1)
+    rc_return=$?
+
+    echo -e "${uid_output}\n${head_fail} ${rc_return}"
+    read -p "${head_pause}"
+    return ${rc_return}
+}
+
+# Eliminar uid para clave gpg maestra
+gpg_delete_uid() {
+    local masterkey="$1"
+    local uid="$2"
+    local passphrase="$3"
+
+    clear
+    echo "${pgmsg_000} ${pgmsg_400}"
+    echo "-------------------------------------------------------------------------------------"
+
+    # Verificar que las variables requeridas estén definidas
+    if [[ -z "${uid}" || -z "${passphrase}" || -z "$masterkey" ]]
+    then
+        return 245
+    fi
+
+    # Ejecuta los comandos de GPG para eliminar identidad
+    local index=$(echo "${uid}" | cut -d\- -f1)
+    uid_output=$(echo -e "uid ${index}\ndeluid\ny\nsave\n" | \
+    gpg --command-fd=0 --status-fd=2 --pinentry-mode=loopback \
+        --batch --yes --passphrase "${passphrase}" \
+        --edit-key "${masterkey}" 2>&1)
+    rc_return=$?
+
+    echo -e "${uid_output}\n${head_fail} ${rc_return}"
+    read -p "${head_pause}"
+    return ${rc_return}
+}
+
+# Función para obtener la lista de llaves maestras activas
+get_master_keys() {
+    keys=$(gpg --list-secret-keys --with-colons --fingerprint | awk -F: '/^fpr:/ {fingerprint=$10} /^uid:/ {print fingerprint ":" $10}')
+    echo "${keys}"
+}
+
+# Función para obtener la lista de llaves maestras activas
+get_fpr_uid_master_keys() {
+    keys=$(gpg --list-secret-keys --with-colons | awk -F: '/^sec:/ {keyid=$5} /^uid:/ {print $6 "|" keyid ":" $10}')
+    echo "${keys}"
+}
+
+# Función para obtener la lista de uids
+get_master_uids() {
+    local fingerprint="$1"
+    local uids=""
+
+    # Verifica si se pasó un argumento
+    if [ -z "${fingerprint}" ]
+    then
+        return 255
+    fi
+
+    # Ejecuta el comando gpg y almacena la salida
+    local num=0
+    while IFS=: read -r field1 field2 field3 field4 field5 field6 field7 field8 field9 field10 field11 field12
+    do
+        # Verifica si la línea es una UID válida
+        if [ "${field1}" == "uid" ]
+        then
+            local id="${field6}"
+            local name_and_email="${field10}"
+            local email=$(echo "${name_and_email}" | grep -oP '(?<=<).*?(?=>)')
+            local name=$(echo "${name_and_email}" | grep -oP '.*(?= <)')
+            (( num++ ))
+            uids+="${num}-${id}:${name_and_email}"$'\n'
+        fi
+    done < <(gpg --with-colons --list-keys "$fingerprint")
+
+    echo "${uids}"
+}
+
+# Función para obtener la lista de emails (uids) para un fingerprint determinado
+get_gpg_email_uid() {
+    local fp_selected=$1
+    local uid_selected=$2
+
+    echo "$(gpg --list-keys --with-colons ${fp_selected} | grep -A1 "^uid.*${uid_selected}" | grep "^uid" | sed -n 's/.*<\([^>]*\)>.*/\1/p')"
+}
+
+# Función para obtener la lista de descripción completa (uids) para un fingerprint determinado
+get_gpg_full_email_uid() {
+    local fp_selected=$1
+    local uid_selected=$2
+
+    echo "$(gpg --list-secret-keys --with-colons --fingerprint ${fp_selected} | grep "^uid.*${uid_selected}" | cut -d":" -f10)"
+}
+
+# Función para obtener la lista de subclaves de firma para un masterkey determinado
+get_gpg_signs_subkeys() {
+    local mkey=$1
+    local description=$2
+
+    echo "$(gpg --list-secret-keys --with-colons --keyid-format=long "${mkey}" | awk -F: '$1 == "ssb" { subkey = $5; usage = $12 } $1 == "fpr" && subkey && usage ~ /s/ { print subkey "|" $10 ":"; usage = "" }')${description}"
+}
+
+# Función para mostrar el menú de selección de llaves maestras
+select_master_key() {
+    local head_menu="$1"
+    local keys=$(get_master_keys)
+    local options=()
+    local width="${2:-$CWIDTH}"
+    local elements=4
+
+    while IFS= read -r line
+    do
+        email=$(echo "$line" | cut -d':' -f2)
+        fingerprint=$(echo "$line" | cut -d':' -f1)
+        options+=("${fingerprint}" "${email}")
+        (( elements++ ))
+    done <<< "$keys"
+
+    local rows=$(expr ${CROWS} + ${elements})
+    choice=$(dialog --clear --begin ${CY} ${CX} \
+                    --backtitle "${title}" \
+                    --title "${apps_title}" \
+                    --menu "${head_menu}" \
+                    ${rows} ${width} ${elements} \
+                    "${options[@]}" \
+                    2>&1 >/dev/tty)
+
+    echo "${choice}"
+}
+
+# Función para mostrar el menú de selección de llaves maestras con uid_id/fingerprint
+select_uid_fp_key() {
+    local head_menu="$1"
+    local keys=$(get_fpr_uid_master_keys)
+    local options=()
+    local width="${2:-$CWIDTH}"
+    local elements=4
+
+    while IFS= read -r line
+    do
+        email=$(echo "$line" | cut -d':' -f2)
+        fingerprint=$(echo "$line" | cut -d':' -f1)
+        options+=("${fingerprint}" "${email}")
+        (( elements++ ))
+    done <<< "$keys"
+
+    local rows=$(expr ${CROWS} + ${elements})
+    choice=$(dialog --clear --begin ${CY} ${CX} \
+                    --backtitle "${title}" \
+                    --title "${apps_title}" \
+                    --menu "${head_menu}" \
+                    ${rows} ${width} ${elements} \
+                    "${options[@]}" \
+                    2>&1 >/dev/tty)
+
+    echo "${choice}"
+}
+
+# Función para mostrar el menú de selección de las llaves de firma para una clave maestra
+select_sign_subkey() {
+    local head_menu="$1"
+    local mkey="$2"
+    local reference="$3"
+    local keys=$(get_gpg_signs_subkeys "${mkey}" "${reference}")
+    local options=()
+    local width="${4:-$CWIDTH}"
+    local elements=4
+
+    while IFS= read -r line
+    do
+        description=$(echo "$line" | cut -d':' -f2)
+        key=$(echo "$line" | cut -d':' -f1)
+        options+=("${key}" "${description}")
+        (( elements++ ))
+    done <<< "$keys"
+
+    local rows=$(expr ${CROWS} + ${elements})
+    choice=$(dialog --clear --begin ${CY} ${CX} \
+                    --backtitle "${title}" \
+                    --title "${apps_title}" \
+                    --menu "${head_menu}" \
+                    ${rows} ${width} ${elements} \
+                    "${options[@]}" \
+                    2>&1 >/dev/tty)
+
+    echo "${choice}"
+}
+
+# Función para mostrar el menú de selección de identidades GPG (uid)
+select_master_uid() {
+    local masterkey="$1"
+    local head_menu="${pgmsg_034} ${masterkey}"
+    local keys=$(get_master_uids "${masterkey}")
+    local options=()
+    local width="${2:-$CWIDTH}"
+    local elements=4
+
+    while IFS= read -r line
+    do
+        email=$(echo "$line" | cut -d':' -f2)
+        uid=$(echo "$line" | cut -d':' -f1)
+        options+=("${uid}" "${email}")
+        (( elements++ ))
+    done <<< "$keys"
+
+    local rows=$(expr ${CROWS} + ${elements})
+    choice=$(dialog --clear --begin ${CY} ${CX} \
+                    --backtitle "${title}" \
+                    --title "${apps_title}" \
+                    --extra-button --extra-label "${head_create}" \
+                    --ok-label "${head_delete}" \
+                    --menu "${head_menu}" \
+                    ${rows} ${width} ${elements} \
+                    "${options[@]}" \
+                    2>&1 >/dev/tty)
+    local rc_uid=$?
+    echo "${choice}"
+    return ${rc_uid}
+}
+
+# Función para mostrar el menú de selección de emails (uid)
+select_email_uid() {
+    local head_menu="$1"
+    local options=()
+    local width="${2:-$CWIDTH}"
+    local elements=4
+
+    clear
+    # Iterar sobre cada UID para extraer nombre, email y comentario
+    while IFS= read -r line
+    do
+        # Extraer correo uid id
+        local uuid_1=$(echo ${line} | cut -d: -f1)
+        local uuid_2=$(echo ${line} | cut -d: -f2)
+
+        # Extraer correo electrónico
+        local email=$(echo ${uuid_2} | awk -F '[<>]' '{print $2}')
+
+        # Extraer nombre
+        local name=$(echo ${uuid_2} | awk -F '[(<]' '{print $1}' | xargs)
+
+        # Extraer comentario
+        local comment=$(echo ${uuid_2} | awk -F '[(<]' '{print $2}' | awk -F ')' '{print $1}')
+
+        options+=("${uuid_1}|${email}" "${name} (${comment})")
+        (( elements++ ))
+    done <<< $(get_gpg_email_uid)
+
+    local rows=$(expr ${CROWS} + ${elements})
+    choice=$(dialog --clear --begin ${CY} ${CX} \
+                    --backtitle "${title}" \
+                    --title "${apps_title}" \
+                    --menu "${head_menu}" \
+                    ${rows} ${width} ${elements} \
+                    "${options[@]}" \
+                    2>&1 >/dev/tty)
+
+    local rc_uid=$?
+    echo "${choice}"
+    return ${rc_uid}
+}
+
+# Función para borrar la clave maestra seleccionada
+delete_master_key() {
+    local fingerprint_to_delete="$1"
+    clear
+    gpg --batch --yes --delete-secret-key "${fingerprint_to_delete}"
+    return $?
+}
+
+# Función para hacer backup del gpg keyring (origen --> destino)
+gpg_backup_keyring() {
+    local zip_password="$1"
+    local db_backup="$3"
+
+    clear
+    echo "${pgmsg_000} ${pgmsg_800}"
+    echo "-------------------------------------------------------------------------------------"
+
+    # Obtener la ruta de destino del archivo ZIP desde el archivo de configuración
+    local destino="$2"
+    if [ -z "$destino" ]; then
+        return 11
+    fi
+
+    # Verificar si el directorio de destino existe y crearlo si es necesario
+    if [ ! -d "${destino}" ]
+    then
+        mkdir -p "${destino}"
+        local rc_mkdir=$?
+        if [ ${rc_mkdir} -ne 0 ]
+        then
+            return ${rc_mkdir}
+        fi
+    fi
+
+    # Verificar que la contraseña no este en blanco
+    if [ -z "${zip_password}" ]; then
+        return 13
+    fi
+
+    # Exportar el anillo de claves GPG a un archivo de respaldo temporal
+    local tmp_path=$(mktemp -d)
+    local suffix=$(date +%Y%m%d%H%M%S)
+    local tmp_file="${suffix}.gpg"
+    gpg --export-options backup -o "${tmp_path}/${tmp_file}" --export
+    local rc_gpg=$?
+    if [ ${rc_gpg} -ne 0 ]
+    then
+        rm -rf "${tmp_path}"
+        echo "${pgmsg_805} (${rc_gpg})"
+        read -p "${head_pause}"
+        return ${rc_gpg}
+    fi
+
+    # Display gpg export ok
+    echo "${head_gpg_export}"
+
+    # SQL Dump para GPG_SUBKEYS
+    local tmp_dump="gpg_dump.sql"
+    local db_dump="${tmp_path}/${tmp_dump}"
+    db_export_tables "${db_backup}" "${db_dump}" "${DB_GPG_SUBKEYS}"
+    local rc_dump=$?
+    if [ ${rc_dump} -ne 0 ]
+    then
+        rm -rf "${tmp_path}"
+        echo "${pgmsg_801} ${DB_GPG_SUBKEYS} (${rc_dump})"
+        read -p "${head_pause}"
+        return ${rc_dump}
+    fi
+
+    # Display sqlite database GPG Tables OK
+    echo "${head_gpg_dbtables_ok} ${DB_GPG_SUBKEYS}"
+
+    # Copiar los archivos de revocación
+    local revoke_path="${GNUPGHOME:-$HOME/.gnupg}/openpgp-revocs.d"
+    cp -f "${revoke_path}"/${REVOKE_FILES} "${tmp_path}/"
+    local rc_copy=$?
+    if [ ${rc_copy} -ne 0 ]
+    then
+        rm -rf "${tmp_path}"
+        echo "${pgmsg_802} (${rc_copy})"
+        read -p "${head_pause}"
+        return ${rc_copy}
+    fi
+
+    # Display revoke files copy ok
+    echo "${head_gpg_revoke_copy_ok}"
+
+    # Cambiar el directorio de trabajo a la carpeta temporal para poder hacer el empaquetamiento zip
+    cd "${tmp_path}"
+    local rc_cd=$?
+     if [ ${rc_cd} -ne 0 ]
+    then
+        rm -rf "${tmp_path}"
+        echo "${pgmsg_803} (${rc_cd})"
+        read -p "${head_pause}"
+        return 15
+    fi
+
+    # Comprimir el archivo de respaldo en un archivo ZIP protegido con contraseña
+    zip -P "${zip_password}" "${destino}/gpg_${suffix}.zip" "${tmp_dump}" "${tmp_file}" ${REVOKE_FILES}
+    rc_zip=$?
+    if [ ${rc_zip} -ne 0 ]
+    then
+        rm -rf "${tmp_path}"
+        echo "${pgmsg_804} (${rc_zip})"
+        read -p "${head_pause}"
+        return ${rc_zip}
+    fi
+
+    rm -rf "${tmp_path}"
+    echo "${head_gpg_zip_ok}"
+    read -p "${head_pause}"
+    return 0
+}
