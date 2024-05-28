@@ -446,6 +446,37 @@ crypto_subkey_add() {
     fi
 }
 
+post_identity() {
+    local destino=${HOME}/$(cat ${HOME}/bin/lib/gpg.backup)
+
+    clear
+    selected_key=$(select_public_key "\n${pgmsg_045}" 105)
+    if [ -n "${selected_key}" ]
+    then
+        mz_yesno "${pgmsg_046} ${selected_key}?"
+        case ${result} in
+            0)
+            gpg_post_identity "${selected_key}" "${destino}"
+            rc_post=$?
+            if [ ${rc_post} -eq 0 ]
+            then
+                show_error_dialog "${head_info}" "${pgmsg_048_1} ${selected_key} ${pgmsg_048_2}"
+            else
+                show_error_dialog "${head_error}" "${pgmsg_049}"
+            fi
+            ;;
+            *)
+            show_error_dialog "${head_info}" "${pgmsg_050}"
+            clear
+            return ${result}
+            ;;
+        esac
+    else
+        show_error_dialog "${head_error}" "${pgmsg_044}"
+        return 254
+    fi
+}
+
 gpg_backup() {
     declare -a response c_lbl, c_hlp, c_mod, c_val
     local db_file="${HOME}/${DB_PATH}/${DB_USER}"
@@ -727,6 +758,9 @@ do
         ;;
         "${pgmnu_k06}")
         set_global_git
+        ;;
+        "${pgmnu_k07}")
+        post_identity
         ;;
         "${pgmnu_k09}")
         gpg_backup

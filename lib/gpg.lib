@@ -13,6 +13,8 @@
 
 # Global Default Variables
 BINLIB_PATH=bin/lib
+GPG_TEMPLATE=~/${BINLIB_PATH}/gpg.config
+GPG_CONFIG=gpg.conf
 GPG_SUBKEY_ID=""
 DB_GPG_SUBKEYS_KEY="subkey_id"
 DB_GPG_SUBKEYS="GPG_SUBKEYS"
@@ -22,6 +24,37 @@ REVOKE_FILES="*.rev"
 # Check lib dependencies
 [ ! -v "${MA_LOADED}" ] && source "${HOME}/${BINLIB_PATH}/messages.lib"
 [ ! -v "${DB_LOADED}" ] && source "${HOME}/${BINLIB_PATH}/db.lib"
+
+# Set gpg config file
+set_gpg_config() {
+    local gpg_path=~/.gnupg
+    local gpg_template="$1"
+    local gpg_destination="$2"
+
+    # Check if gpg directory path exists
+    if [ ! -d "${gpg_path}" ]
+    then
+        # Create gpg directory path
+        mkdir -p "${gpg_path}"
+    fi
+
+    # Check if gpg template file exists
+    if [ ! -f "${gpg_template}" ]
+    then
+        return 1
+    fi
+
+    if [ -f "${gpg_path}/${gpg_destination}" ]
+    then
+        # Destination file backup
+        backup_file="${gpg_destination}.bak"
+        cp -f "${gpg_path}/${gpg_destination}" "${gpg_path}/${backup_file}"
+    fi
+
+    # Copia el archivo de plantilla al destino
+    cp -f "${gpg_template}" "${gpg_path}/${gpg_destination}"
+    return $?
+}
 
 # Generar una clave GPG de seguridad (uso: C)
 gpg_create_masterkey() {
@@ -215,6 +248,16 @@ get_gpg_email_uid() {
     local uid_selected=$2
 
     echo "$(gpg --list-keys --with-colons ${fp_selected} | grep -A1 "^uid.*${uid_selected}" | grep "^uid" | sed -n 's/.*<\([^>]*\)>.*/\1/p')"
+}
+
+get_gpg_identity_masterkey() {
+
+    echo "$(gpg --list-secret-keys --with-colons --keyid-format=long | awk -F: '
+        BEGIN { found_fpr = 0; found_uid = 0; fingerprint = ""; email = ""; key_id = "" }
+        $1 == "sec" && $12 == "ecESC" { found_fpr = 1; key_id = $5 }
+        $1 == "fpr" && found_fpr == 1 { fingerprint = $10 }
+        $1 == "uid" && found_fpr == 1 { email = $10; found_uid = 1 }
+        found_fpr && found_uid { print key_id "|" fingerprint ":" email; found_fpr = 0; found_uid = 0; fingerprint = ""; email = "" }')"
 }
 
 # Función para obtener la lista de descripción completa (uids) para un fingerprint determinado
@@ -424,12 +467,62 @@ select_email_uid() {
     return ${rc_uid}
 }
 
+# Función para mostrar el menú de selección de llaves maestras tipo EC que serán públicas
+select_public_key() {
+    local head_menu="$1"
+    local keys=$(get_gpg_identity_masterkey)
+    local options=()
+    local width="${2:-$CWIDTH}"
+    local elements=4
+
+    while IFS= read -r line
+    do
+        email=$(echo "$line" | cut -d':' -f2)
+        mkey=$(echo "$line" | cut -d':' -f1)
+        options+=("${mkey}" "${email}")
+        (( elements++ ))
+    done <<< "$keys"
+
+    local rows=$(expr ${CROWS} + ${elements})
+    choice=$(dialog --clear --begin ${CY} ${CX} \
+                    --backtitle "${title}" \
+                    --title "${apps_title}" \
+                    --menu "${head_menu}" \
+                    ${rows} ${width} ${elements} \
+                    "${options[@]}" \
+                    2>&1 >/dev/tty)
+
+    echo "${choice}"
+}
+
 # Función para borrar la clave maestra seleccionada
 delete_master_key() {
     local fingerprint_to_delete="$1"
     clear
     gpg --batch --yes --delete-secret-key "${fingerprint_to_delete}"
     return $?
+}
+
+# Función para publicar Identidad GPG (clave primaria CE)
+gpg_post_identity() {
+    local mkey="$1"
+    local destino="$2"
+    local gpg_id="$(echo "${mkey}" | cut -d'|' -f1)"
+    local gpg_fp="$(echo "${mkey}" | cut -d'|' -f2)"
+
+    clear
+    echo "${pgmsg_000} ${pgmsg_600}"
+    echo "-------------------------------------------------------------------------------------"
+    set_gpg_config "${GPG_TEMPLATE}" "${GPG_CONFIG}"
+    gpg --armor --export ${gpg_id} > "${destino}"/${gpg_fp}.asc
+    echo "${gpg_fp}" | sed 's/.\{4\}/& /g' > "${destino}"/${gpg_id}.txt
+    echo "${gpg_fp}" | qrencode -o "${destino}"/${gpg_id}.png
+    # Sending to Primary GPG Keyserver
+    gpg --send-keys ${gpg_id}
+    # Sending to Secondary GPG Keyserver
+    gpg --keyserver  hkps://keys.openpgp.org --send-keys ${gpg_id}
+    gpg --refresh-keys
+    read -p "${head_pause}"
 }
 
 # Función para hacer backup del gpg keyring (origen --> destino)
