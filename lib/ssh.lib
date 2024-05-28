@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+#bash script     : ssh.lib
+#apps            : MRosero Personal Developer Utilities
+#description     : SSH Tools Library
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+# Global Default Variables
+SSH_LOADED=1
+BINLIB_PATH=bin/lib
+SSH_USER_PATH=~/.ssh
+SSH_BACKUPS=backups.d
+SSH_CONFIG=configs.d
+SSH_SOPS=sops.d
+SSH_TEMPLATE=ssh.config
+
+# Check lib dependencies
+[ ! -v "${MA_LOADED}" ] && source "${HOME}/${BINLIB_PATH}/messages.lib"
+
+#Función para re/construir la carpeta .ssh
+ssh_local_build() {
+    local backup_file=$(date "+%Y%m%d%H%M%S")-ssh.tgz
+
+    # Crear carpeta ~/.ssh si no existe y si existe saca un backup y reestructura
+    if [ -d "${SSH_USER_PATH}" ]
+    then
+        if [ ! -d "${SSH_USER_PATH}/${SSH_BACKUPS}" ]
+        then
+            cd
+            tar cpzvf  /tmp/${backup_file} .ssh
+            [[ $? -eq 0 ]] && rm -rf ${SSH_USER_PATH}/*
+            mkdir -p "${SSH_USER_PATH}/${SSH_CONFIG}" "${SSH_USER_PATH}/${SSH_BACKUPS}" "${SSH_USER_PATH}/${SSH_SOPS}"
+            cp -f /tmp/${backup_file} ${SSH_USER_PATH}/${SSH_BACKUPS}/
+            [[ $? -eq 0 ]] && rm -f /tmp/${backup_file}
+        fi
+    else
+       mkdir -p "${SSH_USER_PATH}"/{${SSH_CONFIG}, ${SSH_BACKUPS}, ${SSH_SOPS}}
+    fi
+    cp -f ${BINLIB_PATH}/${SSH_TEMPLATE} ${SSH_USER_PATH}/
+}
