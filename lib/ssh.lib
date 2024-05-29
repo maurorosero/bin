@@ -22,11 +22,13 @@ SSH_TEMPLATE=ssh.config
 
 # Check lib dependencies
 [ ! -v "${MA_LOADED}" ] && source "${HOME}/${BINLIB_PATH}/messages.lib"
+[ ! -v "${MA_LOADED}" ] && load_messages "${HOME}" "head"
+load_messages "${HOME}" "ssh"
 
 #Función para re/construir la carpeta .ssh
 ssh_local_build() {
     local backup_file=$(date "+%Y%m%d%H%M%S")-ssh.tgz
-
+    local comment="${shmsg_001}"
     # Crear carpeta ~/.ssh si no existe y si existe saca un backup y reestructura
     if [ -d "${SSH_USER_PATH}" ]
     then
@@ -40,7 +42,29 @@ ssh_local_build() {
             [[ $? -eq 0 ]] && rm -f /tmp/${backup_file}
         fi
     else
-       mkdir -p "${SSH_USER_PATH}"/{${SSH_CONFIG}, ${SSH_BACKUPS}, ${SSH_SOPS}}
+        [[ ! -d "${SSH_USER_PATH}/${SSH_CONFIG}" ]] && mkdir -p "${SSH_USER_PATH}/${SSH_CONFIG}"
+        [[ ! -d "${SSH_USER_PATH}/${SSH_BACKUPS}" ]] && mkdir -p "${SSH_USER_PATH}/${SSH_BACKUPS}"
+        [[ ! -d "${SSH_USER_PATH}/${SSH_SOPS}" ]] && mkdir -p "${SSH_USER_PATH}/${SSH_SOPS}"
     fi
-    cp -f ${BINLIB_PATH}/${SSH_TEMPLATE} ${SSH_USER_PATH}/
+    chmod 0700 "${SSH_USER_PATH}/${SSH_CONFIG}" "${SSH_USER_PATH}/${SSH_BACKUPS}" "${SSH_USER_PATH}/${SSH_SOPS}"
+    cp -f ~/${BINLIB_PATH}/${SSH_TEMPLATE} ${SSH_USER_PATH}/config
+    chmod 0600 ${SSH_USER_PATH}/config
+
+    local ssh_name="$(git config --global user.name)"
+    local ssh_email="$(git config --global user.email)"
+
+    if [ -n "${ssh_email}" ]
+    then
+        comment="${ssh_email}"
+        if [ -n "${ssh_name}" ]
+        then
+            comment="${ssh_name} <${ssh_email}>"
+        fi
+    else
+        if [ -n "${ssh_name}" ]
+        then
+            comment="${ssh_name} (${shmsg_001})"
+        fi
+    fi
+    ( echo -e "\ny\n" | ssh-keygen -t rsa -b 4096 -N "" -C "${comment}" -q >/dev/null )
 }
