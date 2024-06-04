@@ -10,3 +10,6 @@ db/*
 
 # Ignorar archivo terraform.tfvars en todos los directorios
 terraform.tfvars
+
+# Ignorar los dominios definidos para cloudflare
+cloudflare/domains/*
