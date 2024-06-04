@@ -15,6 +15,10 @@
 MA_LOADED=1
 BINLIB_PATH=bin/lib
 BINMSG_PATH=bin/msg
+SOPS_PATH=$(cat ${HOME}/bin/lib/gpg.backup)/sops
+SOPS_TYPE=6
+SOPS_ID="PERSONAL SOPS"
+PERSONAL_GIT="PERSONAL GIT"
 
 # Función para cargar mensajes según idioma
 load_messages() {

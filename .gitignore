@@ -1,1 +1,12 @@
+# Ignorar las bases de datos sqlite personales
 db/*
+
+# Ignorar archivos tfstate en todos los directorios
+*.tfstate
+*.tfstate.*
+
+# Ignorar directorios .terraform en todos los directorios
+.terraform/
+
+# Ignorar archivo terraform.tfvars en todos los directorios
+terraform.tfvars

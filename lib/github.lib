@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+#bash script     : github.lib
+#apps            : MRosero Personal Developer Utilities
+#description     : Github Tools Library
+#author		     : MRP/mrp - Mauro Rosero P.
+#company email   : mauro@rosero.one
+#personal email  : mauro.rosero@gmail.com
+#date            : 20240201
+#version         : 1.0.2
+#notes           :
+#==============================================================================
+#==============================================================================
+
+# Global Default Variables
+GH_LOADED=1
+BINLIB_PATH=bin/lib
+GH_TOKEN_PERSONAL_FILE="github_personal.yaml"
+GITHUB_API="https://api.github.com"
+GH_PARAMS_FILE="/tmp/token_params.json"
+GH_LBL_USER="github_user"
+GH_LBL_TOKEN="github_token"
+GH_TF_GPGKEY_PATH=github/gpg-key
+GH_TF_SSHKEY_PATH=github/ssh-key
+GH_SSH_TEMPLATE=github.personal.ssh
+GH_SSH_CONFIG=github.personal.cfg
+
+# Check lib dependencies
+[[ ! -v "${MA_LOADED}" ]] && source "${HOME}/${BINLIB_PATH}/messages.lib"
+load_messages "${HOME}" "head"
+load_messages "${HOME}" "github"
+
+# Función que usa la api de github para generar un token de acceso personal (full access)
+set_github_token() {
+    local GITHUB_USER="$1"
+    local GITHUB_TOKEN="$2"
+    local SOPS_FINGERPRINT="$3"
+    local TOKEN_PERSONAL_PATH="$4"
+
+    # Verificar que los parámetros necesarios se proporcionen
+    if [[ -z "${GITHUB_USER}" || -z "${GITHUB_TOKEN}" || -z "${SOPS_FINGERPRINT}" || -z "${TOKEN_PERSONAL_PATH}" ]]
+    then
+        return 1
+    fi
+
+    # Verificar si el directorio existe, si no, crearlo
+    if [ ! -d "${TOKEN_PERSONAL_PATH}" ]
+    then
+        mkdir -p "${TOKEN_PERSONAL_PATH}"
+        local rc_mkdir=$?
+        if [ ${rc_mkdir} -ne 0 ]
+        then
+            return 2
+        fi
+    fi
+
+    clear
+    # Guardar el token de acceso en un archivo YAML encriptado con SOPS y GPG
+    local FILE_PATH="${TOKEN_PERSONAL_PATH}/${GH_TOKEN_PERSONAL_FILE}"
+    echo -e "\n  ${GH_LBL_USER}: ${GITHUB_USER}\n  ${GH_LBL_TOKEN}: $(echo "${GITHUB_TOKEN}" | base64)\n" | sops -e --input-type yaml --output-type yaml --pgp ${SOPS_FINGERPRINT} /dev/stdin > "${FILE_PATH}"
+    read k
+}
+
+# Función para configurar la firma GPG en GitHub y Git
+github_set_gpg() {
+    local GPG_KEY_ID="$1"
+    local SOPS_PATH="$2"
+
+    # Check if terraform is not installed, exited!
+    if ! command -v terraform >/dev/null 2>&1
+    then
+        return 4
+    fi
+
+    # Verificar que las variables SOPS_FILE, GPG_PASS y GPG_KEY_ID estén definidas
+    if [[ -z "${SOPS_PATH}" || -z "${GPG_KEY_ID}" ]]
+    then
+        return 1
+    fi
+
+    clear
+    clear
+    echo "${ghmsg_000} ${ghmsg_400}"
+    echo "-------------------------------------------------------------------------------------"
+
+    # Descifrar el archivo YAML con SOPS usando GPG
+    local SOPS_FILE="${SOPS_PATH}/${GH_TOKEN_PERSONAL_FILE}"
+    local SOPS_DECRYPTED=$(sops -d "${SOPS_FILE}")
+
+    # Extraer GITHUB_USER y GITHUB_TOKEN del archivo descifrado
+    local GITHUB_USER=$(echo "${SOPS_DECRYPTED}" | grep "${GH_LBL_USER}" | awk -F ': ' '{print $2}')
+    local GITHUB_CRYPT_TOKEN=$(echo "${SOPS_DECRYPTED}" | grep "${GH_LBL_TOKEN}" | awk -F ': ' '{print $2}')
+    export TF_VAR_GITHUB_TOKEN="$(echo "${GITHUB_CRYPT_TOKEN}" | base64 -d)"
+    # Verificar que las variables GITHUB_USER y GITHUB_TOKEN estén definidas
+    if [[ -z "${GITHUB_USER}" || -z "${GITHUB_TOKEN}" ]]
+    then
+        return 3
+    fi
+
+    # Exportar la clave pública GPG directamente a una variable
+    export TF_VAR_GPG_PUBLIC_KEY=$(gpg --armor --export "${GPG_KEY_ID}")
+
+    # Usar terraform para configurar la firma personal pública GPG para GIT en GITHUB
+    terraform -chdir="${HOME}/${BINLIB_PATH}/${GH_TF_GPGKEY_PATH}" init
+    if [[ $? -eq 0 ]]
+    then
+        terraform -chdir="${HOME}/${BINLIB_PATH}/${GH_TF_GPGKEY_PATH}" plan
+        if [[ $? -eq 0 ]]
+        then
+            terraform -chdir="${HOME}/${BINLIB_PATH}/${GH_TF_GPGKEY_PATH}" apply -auto-approve
+        fi
+    fi
+    read -p "${head_pause}"
+}
+
+# Función para configurar la firma GPG en GitHub y Git
+github_set_ssh() {
+    local SOPS_PATH="$1"
+    local FULLNAME="$2"
+
+    # Check if terraform is not installed, exited!
+    if ! command -v terraform >/dev/null 2>&1
+    then
+        return 1
+    fi
+
+    # Verificar que las variable SOPS_PATH esté definida
+    if [[ -z "${SOPS_PATH}" ]]
+    then
+        return 2
+    fi
+
+    clear
+    clear
+    echo "${ghmsg_000} ${ghmsg_300}"
+    echo "-------------------------------------------------------------------------------------"
+
+    # Descifrar el archivo YAML con SOPS usando GPG
+    local SOPS_FILE="${SOPS_PATH}/${GH_TOKEN_PERSONAL_FILE}"
+    local SOPS_DECRYPTED=$(sops -d "${SOPS_FILE}")
+
+    # Extraer GITHUB_USER y GITHUB_TOKEN del archivo descifrado
+    local GITHUB_CRYPT_TOKEN=$(echo "${SOPS_DECRYPTED}" | grep "${GH_LBL_TOKEN}" | awk -F ': ' '{print $2}')
+    export TF_VAR_GITHUB_TOKEN="$(echo "${GITHUB_CRYPT_TOKEN}" | base64 -d)"
+    # Verificar que las variables GITHUB_USER y GITHUB_TOKEN estén definidas
+    if [[ -z "${GITHUB_TOKEN}" ]]
+    then
+        return 3
+    fi
+
+    # Generar y obtener clave ssh para github
+    cp -f  ${HOME}/${BINLIB_PATH}/${GH_TF_SSHKEY_PATH}/${GH_SSH_TEMPLATE} ${SSH_USER_PATH}/${SSH_CONFIG}/${GH_SSH_CONFIG}
+    local ssh_name="$(git config --global user.name)"
+    if [[ ! -f ~/.ssh/id_github_rsa ]]
+    then
+        local ssh_email="$(git config --global user.email)"
+
+        if [ -n "${ssh_email}" ]
+        then
+            comment="${ssh_email}"
+            if [ -n "${ssh_name}" ]
+            then
+                comment="${ssh_name} <${ssh_email}>"
+            fi
+        else
+            if [ -n "${ssh_name}" ]
+            then
+                comment="${ssh_name} (${ghmsg_022})"
+            fi
+        fi
+        ( echo -e "\ny\n" | ssh-keygen -t rsa -b 4096 -N "" -C "${comment}" -q -f ~/.ssh/id_github_rsa )
+    fi
+
+    # Usar terraform para configurar la firma personal pública GPG para GIT en GITHUB
+    if [[ -z "${ssh_name}" ]]
+    then
+        export TF_VAR_GITHUB_SSH="${ghmsg_022}"
+    else
+        export TF_VAR_GITHUB_SSH="${ghmsg_022} (${ssh_name})"
+    fi
+    terraform -chdir="${HOME}/${BINLIB_PATH}/${GH_TF_SSHKEY_PATH}" init
+    if [[ $? -eq 0 ]]
+    then
+        terraform -chdir="${HOME}/${BINLIB_PATH}/${GH_TF_SSHKEY_PATH}" plan
+        if [[ $? -eq 0 ]]
+        then
+            terraform -chdir="${HOME}/${BINLIB_PATH}/${GH_TF_SSHKEY_PATH}" apply -auto-approve
+        fi
+    fi
+    read -p "${head_pause}"
+}
