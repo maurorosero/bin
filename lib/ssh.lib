@@ -67,4 +67,5 @@ ssh_local_build() {
         fi
     fi
     ( echo -e "\ny\n" | ssh-keygen -t rsa -b 4096 -N "" -C "${comment}" -q >/dev/null )
+    eval "$(ssh-agent -s)"
 }

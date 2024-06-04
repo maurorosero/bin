@@ -168,6 +168,7 @@ github_set_ssh() {
             fi
         fi
         ( echo -e "\ny\n" | ssh-keygen -t rsa -b 4096 -N "" -C "${comment}" -q -f ~/.ssh/id_github_rsa )
+        eval "$(ssh-agent -s)"
     fi
 
     # Usar terraform para configurar la firma personal pública GPG para GIT en GITHUB
