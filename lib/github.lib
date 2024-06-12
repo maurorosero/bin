@@ -57,7 +57,6 @@ set_github_token() {
     # Guardar el token de acceso en un archivo YAML encriptado con SOPS y GPG
     local FILE_PATH="${TOKEN_PERSONAL_PATH}/${GH_TOKEN_PERSONAL_FILE}"
     echo -e "\n  ${GH_LBL_USER}: ${GITHUB_USER}\n  ${GH_LBL_TOKEN}: $(echo "${GITHUB_TOKEN}" | base64)\n" | sops -e --input-type yaml --output-type yaml --pgp ${SOPS_FINGERPRINT} /dev/stdin > "${FILE_PATH}"
-    read k
 }
 
 # Función para configurar la firma GPG en GitHub y Git

@@ -42,5 +42,6 @@ vldt_001="no puede estar en blanco..."
 vldt_002="Contraseña incorrecta! Intente nuevamente."
 vldt_010="Dirección de correo electrónico es inválida!"
 vldt_011="Duración de clave gpg inválida!"
+vldt_012="No es un nombre de dominio DNS válido!"
 
 label_email="Correo Electrónico:"

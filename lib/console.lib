@@ -147,6 +147,7 @@ validate_capture() {
     local label="$3"
     local email_regex='^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
     local gpg_duration_regex="^[0-9]+([dmy])?$"
+    local domain_regex="^(([a-zA-Z]{1})|([a-zA-Z]{1}[a-zA-Z]{1})|([a-zA-Z]{1}[0-9]{1})|([0-9]{1}[a-zA-Z]{1})|([a-zA-Z0-9]+[a-zA-Z0-9-]*[a-zA-Z0-9]+))(\.([a-zA-Z]{2,})){1,}$"
 
     # Verificar si se proporcionó un argumento
     if [ $# -ne 0 ]; then
@@ -178,6 +179,13 @@ validate_capture() {
                 if [[ ! "${value}" =~ ${gpg_duration_regex} ]]
                 then
                     show_error_dialog "${head_error}" "${vldt_011}"
+                    return 1
+                fi
+                ;;
+                012)
+                if [[ ! "${value}" =~ ${domain_regex} ]]
+                then
+                    show_error_dialog "${head_error}" "${vldt_012}"
                     return 1
                 fi
                 ;;

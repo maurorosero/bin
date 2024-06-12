@@ -18,7 +18,7 @@ GPG_CONFIG=gpg.conf
 GPG_SUBKEY_ID=""
 DB_GPG_SUBKEYS_KEY="subkey_id"
 DB_GPG_SUBKEYS="GPG_SUBKEYS"
-DF_GPG_SUBKEYS="${DB_GPG_SUBKEYS,,}.sql"
+DF_GPG_SUBKEYS="${DB_GPG_SUBKEYS}.sql"
 REVOKE_FILES="*.rev"
 
 # Check lib dependencies

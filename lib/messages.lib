@@ -15,7 +15,7 @@
 MA_LOADED=1
 BINLIB_PATH=bin/lib
 BINMSG_PATH=bin/msg
-SOPS_PATH=$(cat ${HOME}/bin/lib/gpg.backup)/sops
+SOPS_PATH=$(cat ${HOME}/${BINLIB_PATH}/gpg.backup)/sops
 SOPS_TYPE=6
 SOPS_ID="PERSONAL SOPS"
 PERSONAL_GIT="PERSONAL GIT"
@@ -58,4 +58,24 @@ get_osname() {
     else
         os_name="${head_unknow}"
     fi
+}
+
+# Función para determinar sistemas operativos o distribuciones válidas
+function sops_crypt_file() {
+    local SOPS_FINGERPRINT="$1"
+    local SOPS_PATH="$2"
+    local SOPS_FILE="$3"
+    local SOPS_YAML="$4"
+
+    # Check if sops is not installed, exited!
+    if ! command -v sops >/dev/null 2>&1
+    then
+        return 1
+    fi
+
+    clear
+    # Guardar el token de acceso en un archivo YAML encriptado con SOPS y GPG
+    echo -e "${SOPS_YAML}" | sops -e --input-type yaml --output-type yaml --pgp ${SOPS_FINGERPRINT} /dev/stdin > "${SOPS_PATH}/${SOPS_FILE}"
+    read -p "${head_pause}"
+
 }
