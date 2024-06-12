@@ -85,6 +85,8 @@ jobs:
           zip -r /tmp/bin_${{ steps.read_release_prefix.outputs.prefix }}.zip . \
               -x ".git*" \
               -x ".github*" \
+              -x ".release*" \
+              -x "db" \
               -x ".directory"
 
       - name: Upload package
