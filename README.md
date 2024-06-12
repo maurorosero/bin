@@ -76,11 +76,18 @@ Es una colección de programas python, script en bash, librerías, y otras varia
 | py_packages.sh       | Escritorio | Instala lista de paquetes python.                             |
 |                      | (OS)       | Para una lista propia, crea archivo python.bin en HOME.       |
 |                      |            |                                                               |
-| gpg_addmaster.sh     | Seguridad  | Crea una llave gpg maestra (para crear y revocar subclaves).  |
+| git-alias.sh         | Devs       | Crea shortcuts para comandos git complejos más comunes.       |
 |                      |            |                                                               |
-| gpg_delmaster.sh     | Seguridad  | Elimina una llave gpg maestra completa.                       |
+| github_config.sh     | Devs       | Menú que permite configuración base de cuentas GITHUB         |
 |                      |            |                                                               |
-
+| gpg_config.sh        | Seguridad  | Configura preferencias generales para gestor GPG              |
+|                      |            |                                                               |
+| gpg_setkey.sh        | Seguridad  | Simplifica la gestión básica del almacén GPG Personal         |
+|                      |            |                                                               |
+| cloudflare_token.sh  | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta cloudflare  |
+|                      |            |                                                               |
+| namecheap_token.sh   | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta namecheap   |
+|                      |            |                                                               |
 
 
 
