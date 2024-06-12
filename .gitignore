@@ -4,6 +4,7 @@ db/*
 # Ignorar archivos tfstate en todos los directorios
 *.tfstate
 *.tfstate.*
+*.terraform.lock.hcl
 
 # Ignorar directorios .terraform en todos los directorios
 .terraform/

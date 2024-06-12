@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-#bash script     : cloudflare_token.sh
+#bash script     : namecheap_token.sh
 #apps            : MRosero Personal Developer Utilities
-#description     : Registrar información de acceso para cuenta Cloudflare
+#description     : Registrar información de acceso para cuenta NAMECHEAP
 #author		     : MRP/mrp - Mauro Rosero P.
 #company email   : mauro@rosero.one
 #personal email  : mauro.rosero@gmail.com
@@ -29,35 +29,27 @@ load_messages "${HOME}" "db"
 # Load db library
 source "${HOME}/${BINLIB_PATH}/db.lib"
 
-# Load cloudflare messages
-load_messages "${HOME}" "cloudflare"
+# Load namecheap messages
+load_messages "${HOME}" "namecheap"
 
 # Load sops library
 source "${HOME}/${SOPS_PATH}/personal_sops.lib"
 
 ########### LOCAL FUNCTIONS ###########
 
-# Capturar datos de acceso de CLOUDFLARE y guardarlos de forma segura en SOPS
-function safe_cloudflare_sops() {
+# Capturar datos de acceso de NAMECHEAP y guardarlos de forma segura en SOPS
+function safe_namecheap_sops() {
 
-    # Define gpg capture form
-    c_lbl[0]="${cflbl_001}"
-    c_hlp[0]="${cfhlp_001}"
-    c_mod[0]=${cftyp_001}
+    # Define namecheap access capture form
+    c_lbl[0]="${nclbl_001}"
+    c_hlp[0]="${nchlp_001}"
+    c_mod[0]=${nctyp_001}
     c_val[0]=001
-    c_lbl[1]="${cflbl_002}"
-    c_hlp[1]="${cfhlp_002}"
-    c_mod[1]=${cftyp_002}
-    c_val[1]=001
-    c_lbl[2]="${cflbl_003}"
-    c_hlp[2]="${cfhlp_003}"
-    c_mod[2]=${cftyp_003}
-    c_val[2]=001
-    c_lbl[3]="${cflbl_004}"
-    c_hlp[3]="${cfhlp_004}"
-    c_mod[3]=${cftyp_004}
-    c_val[3]=010
-    c_end=4
+    c_lbl[1]="${nclbl_002}"
+    c_hlp[1]="${nchlp_002}"
+    c_mod[1]=${nctyp_002}
+    c_val[1]=010
+    c_end=2
 
     form_capture
 }
@@ -66,7 +58,7 @@ function safe_cloudflare_sops() {
 ########### MAIN PROGRAM ###########
 
 title="${head_000}"
-apps_title="${cfmsg_100}"
+apps_title="${ncmsg_100}"
 
 # Check if dialog is not installed, exited!
 if ! command -v dialog >/dev/null 2>&1
@@ -82,7 +74,7 @@ fi
 # Check if sops is not installed, exited!
 if ! command -v sops >/dev/null 2>&1
 then
-    show_error_dialog "${head_error}" "${cfmsg_001}"
+    show_error_dialog "${head_error}" "${ncmsg_001}"
     clear
     exit 2
 fi
@@ -99,7 +91,7 @@ fi
 # Check if sops is not installed, exited!
 if ! command -v sops >/dev/null 2>&1
 then
-    show_error_dialog "${head_error}" "${cfmsg_021}"
+    show_error_dialog "${head_error}" "${ncmsg_021}"
     clear
     exit 4
 fi
@@ -109,23 +101,23 @@ QUERY="SELECT subkey_id FROM GPG_SUBKEYS WHERE subkey_type = ${SOPS_TYPE} AND de
 FP_SOPS=$(db_sql_execute_with_result "${DB_FILE}" "${QUERY}")
 if [[ -z "${FP_SOPS}"  ]]
 then
-    show_error_dialog "${head_error}" "${cfmsg_008}"
+    show_error_dialog "${head_error}" "${ncmsg_008}"
     clear
     exit 5
 fi
 
-mz_yesno "${cfmsg_002}"
+mz_yesno "${ncmsg_002}"
 case ${result} in
     0)
     declare -a response c_lbl, c_hlp, c_mod, c_val
-    safe_cloudflare_sops
+    safe_namecheap_sops
     rc_sops=$?
     case ${rc_sops} in
         0)
-        APIKEY_CRYPT="$(echo "${response[3]}" | base64)"
-        SECRET="\n  ${CF_LBL_EMAIL}: ${response[0]}\n  ${CF_LBL_USER}: ${response[1]}\n  ${CF_LBL_ZONE}: ${response[2]}\n  ${CF_LBL_APIKEY}: ${APIKEY_CRYPT}\n"
-        sops_crypt_file "${FP_SOPS}" "${HOME}/${SOPS_PATH}" "${CF_SOPS_FILE}" "${SECRET}"
-        show_error_dialog "${head_error}" "${cfmsg_004}"
+        APIKEY_CRYPT="$(echo "${response[1]}" | base64)"
+        SECRET="\n  ${NC_LBL_USER}: ${response[0]}\n  ${NC_LBL_APIKEY}: ${APIKEY_CRYPT}\n"
+        sops_crypt_file "${FP_SOPS}" "${HOME}/${SOPS_PATH}" "${NC_SOPS_FILE}" "${SECRET}"
+        show_error_dialog "${head_error}" "${ncmsg_004}"
         ;;
         *)
         show_error_dialog "${head_info}" "${head_op_error}"
