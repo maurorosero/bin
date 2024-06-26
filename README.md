@@ -84,11 +84,13 @@ Es una colección de programas python, script en bash, librerías, y otras varia
 |                      |            |                                                               |
 | gpg_setkey.sh        | Seguridad  | Simplifica la gestión básica del almacén GPG Personal         |
 |                      |            |                                                               |
-| cloudflare_token.sh  | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta cloudflare  |
+| cloudflare_token.sh  | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta CLOUDFLARE  |
 |                      |            |                                                               |
-| namecheap_token.sh   | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta namecheap   |
+| namecheap_token.sh   | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta NAMECHEAP   |
 |                      |            |                                                               |
 | fwdemail_token.sh    | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta FWD EMAIL   |
+|                      |            |                                                               |
+| ovh_token.sh         | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta OVH CLOUD   |
 |                      |            |                                                               |
 
 
