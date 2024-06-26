@@ -88,6 +88,9 @@ Es una colección de programas python, script en bash, librerías, y otras varia
 |                      |            |                                                               |
 | namecheap_token.sh   | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta namecheap   |
 |                      |            |                                                               |
+| fwdemail_token.sh    | Acceso     | Crea contenedor de acceso seguro SOPS para cuenta FWD EMAIL   |
+|                      |            |                                                               |
+
 
 
 
