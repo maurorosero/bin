@@ -76,7 +76,7 @@ install() {
 		release=$(wget --header="${gh_auth}" --header="${gh_headr}" -qO - ${gh_url}/repos/${gh_owner}/${gh_repos}/releases/latest | grep -o '"name": *"[^"]*"' | sed 's/"name": "\(.*\)"/\1/' | grep "Release" | cut -d\  -f2)
 		if [ "${release}" == "" ]
 		then
-			DOWNLOAD_FILE=="bin_2.02"
+			DOWNLOAD_FILE="bin_2.02"
 		else
 		    echo "Release ${release}"
 			local gh_asset=${gh_repos}_${release}.zip
@@ -92,7 +92,7 @@ install() {
 				then
 					DOWNLOAD_FILE=${download_file}
 				else
-					DOWNLOAD_FILE=="bin_2.02.zip"
+					DOWNLOAD_FILE="bin_2.02.zip"
 				fi
 			fi
 		fi
