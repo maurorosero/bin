@@ -76,7 +76,7 @@ install() {
 		release=$(wget --header="${gh_auth}" --header="${gh_headr}" -qO - ${gh_url}/repos/${gh_owner}/${gh_repos}/releases/latest | grep -o '"name": *"[^"]*"' | sed 's/"name": "\(.*\)"/\1/' | grep "Release" | cut -d\  -f2)
 		if [ "${release}" == "" ]
 		then
-			DOWNLOAD_FILE="none"
+			DOWNLOAD_FILE=="bin_$(cat < .release_prefix ).zip"
 		else
 		    echo "Release ${release}"
 			local gh_asset=${gh_repos}_${release}.zip
@@ -84,7 +84,7 @@ install() {
 			id_asset=$(curl -s -H "${gh_auth}" -H "${gh_headr}" "${gh_url}/repos/${gh_owner}/${gh_repos}/releases/latest" | jq -r --arg gh_asset "$gh_asset" '.assets[] | select(.name == $gh_asset) | .id')
 			if [ "${id_asset}" == "" ]
 			then
-				DOWNLOAD_FILE="none"
+				DOWNLOAD_FILE="bin_$(cat < .release_prefix ).zip"
 			else
 				local download_file="${gh_download}/${gh_asset}"
 				wget --header="${gh_auth}" --header="Accept: application/octet-stream" -O ${download_file} ${gh_url}/repos/${gh_owner}/${gh_repos}/releases/assets/${id_asset}
@@ -92,7 +92,7 @@ install() {
 				then
 					DOWNLOAD_FILE=${download_file}
 				else
-					DOWNLOAD_FILE="none"
+					DOWNLOAD_FILE=="bin_$(cat < .release_prefix ).zip"
 				fi
 			fi
 		fi
