@@ -94,6 +94,7 @@ then
                 then
                     # Create developers path in $HOME
                     if [ ! -d ${HOME}/${path_developers} ]
+                    then
                         mkdir ${HOME}/${path_developers}
                     fi
                     read key
